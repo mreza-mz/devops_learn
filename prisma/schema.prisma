@@ -1,0 +1,508 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String             @id @default(cuid())
+  username        String             @unique
+  passwordHash    String
+  role            String
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  profile         Profile?
+  exerciseAttempts ExerciseAttempt[]
+  scenarioAttempts ScenarioAttempt[]
+  examAttempts    ExamAttempt[]
+  projectAttempts ProjectAttempt[]
+  skills          UserSkill[]
+  progress        Progress[]
+  reviewQueue     ReviewQueue[]
+  labs            Lab[]
+  achievements    UserAchievement[]
+  aiRequests      AIRequest[]
+}
+
+model Profile {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName      String
+  currentLevelId   String?
+  currentLevel     Level?    @relation(fields: [currentLevelId], references: [id])
+  currentDayNumber Int       @default(1)
+  xp               Int       @default(0)
+  streak           Int       @default(0)
+  lastStudyDate    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Phase {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  titleFa       String
+  titleEn       String
+  descriptionFa String
+  order         Int           @unique
+  weekStart     Int
+  weekEnd       Int
+  topics        Topic[]
+  dailyLessons  DailyLesson[]
+}
+
+model Level {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  titleFa      String
+  titleEn      String
+  order        Int       @unique
+  minXp        Int
+  requirements Json
+  profiles     Profile[]
+}
+
+model Topic {
+  id                String        @id @default(cuid())
+  phaseId           String
+  phase             Phase         @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  slug              String        @unique
+  titleFa           String
+  titleEn           String
+  descriptionFa     String
+  order             Int
+  weaknessThreshold Float         @default(0.6)
+  lessons           Lesson[]
+  skills            Skill[]
+  userSkills        UserSkill[]
+  reviewItems       ReviewQueue[]
+  questions         ExamQuestion[]
+
+  @@index([phaseId])
+}
+
+model Lesson {
+  id            String       @id @default(cuid())
+  topicId       String
+  topic         Topic        @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  dailyLessonId String?
+  dailyLesson   DailyLesson? @relation(fields: [dailyLessonId], references: [id], onDelete: SetNull)
+  slug          String
+  titleFa       String
+  objectiveFa   String
+  theoryMd      String
+  practicalMd   String
+  exampleMd     String
+  commandsJson  Json?
+  order         Int
+  status        String       @default("APPROVED")
+  aiGenerated   Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([dailyLessonId, slug])
+  @@index([topicId])
+  @@index([dailyLessonId])
+}
+
+model DailyLesson {
+  id               String               @id @default(cuid())
+  dayNumber        Int                  @unique
+  phaseId          String
+  phase            Phase                @relation(fields: [phaseId], references: [id])
+  titleFa          String
+  objectiveFa      String
+  passingScore     Int                  @default(70)
+  theoryWeight     Int                  @default(20)
+  practicalWeight  Int                  @default(30)
+  scenarioWeight   Int                  @default(20)
+  examWeight       Int                  @default(30)
+  status           String               @default("APPROVED")
+  lessons          Lesson[]
+  exercises        Exercise[]
+  scenario         ProductionScenario?
+  exam             Exam?
+  progress         Progress[]
+}
+
+model Exercise {
+  id             String            @id @default(cuid())
+  dailyLessonId  String?
+  dailyLesson    DailyLesson?      @relation(fields: [dailyLessonId], references: [id], onDelete: SetNull)
+  topicId        String?
+  projectTaskId  String?
+  titleFa        String
+  instructionsMd String
+  difficulty     String
+  labImage       String            @default("devops-learn-lab:latest")
+  labSetupJson   Json?
+  validationJson Json
+  hintsJson      Json
+  hintPenalty    Int               @default(5)
+  maxScore       Int               @default(6)
+  networkMode    String            @default("none")
+  status         String            @default("APPROVED")
+  aiGenerated    Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  attempts       ExerciseAttempt[]
+  labs           Lab[]
+  reviewItems    ReviewQueue[]
+
+  @@index([dailyLessonId])
+}
+
+model ExerciseAttempt {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId       String
+  exercise         Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  status           String
+  score            Float
+  hintsUsed        Int       @default(0)
+  timeSpentSec     Int       @default(0)
+  validationResult Json?
+  feedbackFa       String?
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+
+  @@index([userId, exerciseId])
+}
+
+model ProductionScenario {
+  id                 String            @id @default(cuid())
+  dailyLessonId      String?           @unique
+  dailyLesson        DailyLesson?      @relation(fields: [dailyLessonId], references: [id], onDelete: SetNull)
+  projectId          String?
+  project            Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  titleFa            String
+  incidentMd         String
+  symptomsMd         String
+  observabilityMd    String
+  environmentMd      String
+  hiddenRootCause    String
+  investigationPath  Json
+  validationJson     Json
+  difficulty         String
+  maxScore           Int               @default(20)
+  labSetupJson       Json?
+  labImage           String            @default("devops-learn-lab:latest")
+  networkMode        String            @default("none")
+  status             String            @default("APPROVED")
+  aiGenerated        Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  attempts           ScenarioAttempt[]
+  labs               Lab[]
+}
+
+model ScenarioAttempt {
+  id               String              @id @default(cuid())
+  userId           String
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenarioId       String
+  scenario         ProductionScenario  @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  status           String
+  score            Float
+  hintsUsed        Int                 @default(0)
+  timeSpentSec     Int                 @default(0)
+  validationResult Json?
+  feedbackFa       String?
+  startedAt        DateTime            @default(now())
+  completedAt      DateTime?
+
+  @@index([userId, scenarioId])
+}
+
+model Exam {
+  id                 String         @id @default(cuid())
+  dailyLessonId      String?        @unique
+  dailyLesson        DailyLesson?   @relation(fields: [dailyLessonId], references: [id], onDelete: SetNull)
+  titleFa            String
+  totalPoints        Int            @default(30)
+  passingScore       Int            @default(70)
+  timeLimitSec       Int            @default(1200)
+  questionCount      Int
+  difficulty         String
+  topicDistribution  Json?
+  status             String         @default("APPROVED")
+  aiGenerated        Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  questions          ExamQuestion[]
+  attempts           ExamAttempt[]
+}
+
+model ExamQuestion {
+  id             String   @id @default(cuid())
+  examId         String
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  topicId        String?
+  topic          Topic?   @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  type           String
+  promptFa       String
+  optionsJson    Json?
+  correctAnswer  String
+  explanationFa  String
+  points         Int
+  difficulty     String
+  order          Int
+  aiGenerated    Boolean  @default(false)
+  status         String   @default("APPROVED")
+  answers        Answer[]
+
+  @@index([examId])
+}
+
+model ExamAttempt {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examId       String
+  exam         Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  status       String
+  score        Float
+  timeSpentSec Int       @default(0)
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  answers      Answer[]
+
+  @@index([userId, examId])
+}
+
+model Answer {
+  id           String      @id @default(cuid())
+  attemptId    String
+  attempt      ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     ExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  response     String
+  isCorrect    Boolean?
+  score        Float
+  feedbackFa   String?
+  mistakesJson Json?
+}
+
+model Project {
+  id                String           @id @default(cuid())
+  slug              String           @unique
+  titleFa           String
+  descriptionMd     String
+  order             Int              @unique
+  isFinal           Boolean          @default(false)
+  injectedFailures  Json?
+  minLevelOrder     Int              @default(1)
+  status            String           @default("APPROVED")
+  tasks             ProjectTask[]
+  attempts          ProjectAttempt[]
+  scenarios         ProductionScenario[]
+}
+
+model ProjectTask {
+  id             String          @id @default(cuid())
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  titleFa        String
+  instructionsMd String
+  order          Int
+  validationJson Json
+  maxScore       Int             @default(10)
+  attempts       ProjectAttempt[]
+}
+
+model ProjectAttempt {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId       String?
+  task         ProjectTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  status       String
+  score        Float        @default(0)
+  evidenceJson Json?
+  startedAt    DateTime     @default(now())
+  completedAt  DateTime?
+
+  @@index([userId, projectId])
+}
+
+model Skill {
+  id      String      @id @default(cuid())
+  topicId String
+  topic   Topic       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  slug    String      @unique
+  titleFa String
+  users   UserSkill[]
+}
+
+model UserSkill {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId     String
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  skillId     String?
+  skill       Skill?   @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  scoreAvg    Float    @default(0)
+  sampleCount Int      @default(0)
+  lastScore   Float    @default(0)
+  isWeak      Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, topicId])
+  @@index([userId])
+}
+
+model Progress {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLessonId     String
+  dailyLesson       DailyLesson @relation(fields: [dailyLessonId], references: [id], onDelete: Cascade)
+  theoryScore       Float       @default(0)
+  practicalScore    Float       @default(0)
+  scenarioScore     Float       @default(0)
+  examScore         Float       @default(0)
+  totalScore        Float       @default(0)
+  status            String      @default("IN_PROGRESS")
+  bestScore         Float       @default(0)
+  latestScore       Float       @default(0)
+  attemptCount      Int         @default(0)
+  timeSpentSec      Int         @default(0)
+  theoryCompleted   Boolean     @default(false)
+  updatedAt         DateTime    @updatedAt
+
+  @@unique([userId, dailyLessonId])
+  @@index([userId])
+}
+
+model ReviewQueue {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId             String
+  topic               Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  reason              String
+  scheduledFor        DateTime
+  completed           Boolean   @default(false)
+  generatedExerciseId String?
+  generatedExercise   Exercise? @relation(fields: [generatedExerciseId], references: [id], onDelete: SetNull)
+  createdAt           DateTime  @default(now())
+
+  @@index([userId, completed])
+}
+
+model AIRequest {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  purpose       String
+  model         String
+  promptHash    String
+  inputTokens   Int?
+  outputTokens  Int?
+  costEstimate  Float?
+  success       Boolean
+  latencyMs     Int
+  error         String?
+  createdAt     DateTime @default(now())
+  logs          AILog[]
+
+  @@index([purpose, createdAt])
+  @@index([promptHash])
+}
+
+model AILog {
+  id        String    @id @default(cuid())
+  requestId String
+  request   AIRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  level     String
+  message   String
+  metadata  Json?
+  createdAt DateTime  @default(now())
+}
+
+model Lab {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId  String?
+  exercise    Exercise?       @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  scenarioId  String?
+  scenario    ProductionScenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  containerId String?
+  status      String
+  networkMode String          @default("none")
+  expiresAt   DateTime
+  createdAt   DateTime        @default(now())
+  stoppedAt   DateTime?
+  commands    LabCommand[]
+  validations LabValidation[]
+
+  @@index([userId, status])
+  @@index([containerId])
+}
+
+model LabCommand {
+  id        String   @id @default(cuid())
+  labId     String
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  command   String
+  exitCode  Int?
+  createdAt DateTime @default(now())
+
+  @@index([labId])
+}
+
+model LabValidation {
+  id          String   @id @default(cuid())
+  labId       String
+  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  passed      Boolean
+  resultsJson Json
+  createdAt   DateTime @default(now())
+}
+
+model Achievement {
+  id            String            @id @default(cuid())
+  slug          String            @unique
+  titleFa       String
+  descriptionFa String
+  xpReward      Int               @default(50)
+  users         UserAchievement[]
+}
+
+model UserAchievement {
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now())
+
+  @@id([userId, achievementId])
+}
+
+model Settings {
+  id                   String   @id @default("global")
+  passingScore         Int      @default(70)
+  excellentScore       Int      @default(90)
+  weaknessThreshold    Float    @default(0.6)
+  hintPenalty          Int      @default(5)
+  labCpuLimit          String   @default("0.5")
+  labMemoryLimit       String   @default("512m")
+  labTimeoutSeconds    Int      @default(1800)
+  labMaxProcesses      Int      @default(64)
+  aiEnabled            Boolean  @default(true)
+  requireAiApproval    Boolean  @default(true)
+  theoryWeight         Int      @default(20)
+  practicalWeight      Int      @default(30)
+  scenarioWeight       Int      @default(20)
+  examWeight           Int      @default(30)
+  updatedAt            DateTime @updatedAt
+}

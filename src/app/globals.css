@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f1ea;
+  --foreground: #1c1915;
+  --card: #fffcf7;
+  --card-foreground: #1c1915;
+  --muted: #e8e2d6;
+  --muted-foreground: #6b6458;
+  --primary: #0f766e;
+  --primary-foreground: #f5fffd;
+  --accent: #c2410c;
+  --accent-foreground: #fff7ed;
+  --border: #d9d1c3;
+  --ring: #0f766e;
+  --sidebar: #1f2933;
+  --sidebar-foreground: #e8eef2;
+  --danger: #b42318;
+  --success: #067647;
+}
+
+.dark {
+  --background: #101418;
+  --foreground: #e8eef2;
+  --card: #171d23;
+  --card-foreground: #e8eef2;
+  --muted: #24303a;
+  --muted-foreground: #9aa7b2;
+  --primary: #2dd4bf;
+  --primary-foreground: #042f2e;
+  --accent: #fb923c;
+  --accent-foreground: #1c1006;
+  --border: #2a3640;
+  --ring: #2dd4bf;
+  --sidebar: #0b1014;
+  --sidebar-foreground: #d7e2ea;
+  --danger: #f97066;
+  --success: #75e0a7;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --font-sans: var(--font-vazirmatn);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-vazirmatn), Tahoma, sans-serif;
+}
+
+.markdown-body pre {
+  direction: ltr;
+  text-align: left;
+  overflow-x: auto;
+  background: #0f1720;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+}
+
+.markdown-body code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.lab-terminal {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.lab-terminal .xterm,
+.lab-terminal .xterm-viewport,
+.lab-terminal .xterm-screen {
+  height: 100%;
+  direction: ltr !important;
+}
+
+.lab-terminal textarea.xterm-helper-textarea {
+  direction: ltr !important;
+  text-align: left !important;
+  left: 0 !important;
+  right: auto !important;
+  top: 0 !important;
 }

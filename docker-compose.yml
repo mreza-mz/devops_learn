@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: file:./dev.db
+      APP_URL: http://localhost:3000
+      NEXT_PUBLIC_TERMINAL_GATEWAY_URL: ws://127.0.0.1:3001
+    volumes:
+      # Docker socket is mounted only into the application service so it can create lab containers.
+      # Student lab containers never receive this socket.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - app-data:/app/prisma
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  app-data:

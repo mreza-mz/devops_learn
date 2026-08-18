@@ -1,0 +1,116 @@
+import { prisma } from "@/server/db/prisma";
+import { errors } from "@/lib/errors";
+import { progressEngine } from "@/services/progress/progress-engine";
+import { gradeExamAnswers } from "@/services/exam/exam-engine";
+import { ATTEMPT_STATUS } from "@/config/constants";
+import { scaleToWeight } from "@/services/scoring/scoring-engine";
+import { CONTENT_STATUS } from "@/config/constants";
+import { aiService } from "@/server/ai/service";
+import { generatedExerciseSchema } from "@/validators/ai";
+import { validationSpecSchema } from "@/services/validation/validation-engine";
+
+export const learningService = {
+  async getDay(dayNumber: number) {
+    const daily = await prisma.dailyLesson.findUnique({
+      where: { dayNumber },
+      include: {
+        phase: true,
+        lessons: { include: { topic: true }, orderBy: { order: "asc" } },
+        exercises: { orderBy: { createdAt: "asc" } },
+        scenario: true,
+        exam: { include: { questions: { orderBy: { order: "asc" } } } },
+      },
+    });
+    if (!daily) {
+      throw errors.notFound("درس روز");
+    }
+    return daily;
+  },
+
+  async completeTheory(userId: string, dayNumber: number) {
+    const daily = await this.getDay(dayNumber);
+    await progressEngine.markTheoryComplete(userId, daily.id, daily.theoryWeight);
+    for (const lesson of daily.lessons) {
+      await progressEngine.recordTopicScore(userId, lesson.topicId, 80);
+    }
+    return progressEngine.recalculateDay(userId, daily.id);
+  },
+
+  async submitExam(userId: string, examId: string, responses: Record<string, string>, timeSpentSec: number) {
+    const exam = await prisma.exam.findUnique({
+      where: { id: examId },
+      include: { questions: true, dailyLesson: true },
+    });
+    if (!exam) {
+      throw errors.notFound("آزمون");
+    }
+    const graded = await gradeExamAnswers(exam.questions, responses);
+    const status =
+      graded.percent >= exam.passingScore
+        ? graded.percent >= 90
+          ? ATTEMPT_STATUS.EXCELLENT
+          : ATTEMPT_STATUS.PASSED
+        : ATTEMPT_STATUS.FAILED;
+    const attempt = await prisma.examAttempt.create({
+      data: {
+        userId,
+        examId,
+        status,
+        score: graded.percent,
+        timeSpentSec,
+        completedAt: new Date(),
+        answers: {
+          create: graded.answers.map((answer) => ({
+            questionId: answer.questionId,
+            response: answer.response,
+            isCorrect: answer.isCorrect,
+            score: answer.score,
+            feedbackFa: answer.feedbackFa,
+          })),
+        },
+      },
+      include: { answers: true },
+    });
+    for (const question of exam.questions) {
+      if (question.topicId) {
+        const answer = graded.answers.find((item) => item.questionId === question.id);
+        const percent = question.points === 0 ? 0 : ((answer?.score ?? 0) / question.points) * 100;
+        await progressEngine.recordTopicScore(userId, question.topicId, percent);
+      }
+    }
+    if (exam.dailyLessonId) {
+      await progressEngine.recalculateDay(userId, exam.dailyLessonId);
+    }
+    return { attempt, graded, status, examScoreWeighted: scaleToWeight(graded.percent, exam.dailyLesson?.examWeight ?? 30) };
+  },
+
+  async createReviewExercise(userId: string, topicId: string) {
+    const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+    if (!topic) {
+      throw errors.notFound("موضوع");
+    }
+    const generated = await aiService.generateReviewExercise(topic.slug);
+    const parsed = generatedExerciseSchema.parse(generated);
+    const validation = validationSpecSchema.parse(parsed.validation);
+    const settings = await prisma.settings.findUniqueOrThrow({ where: { id: "global" } });
+    const exercise = await prisma.exercise.create({
+      data: {
+        topicId,
+        titleFa: parsed.titleFa,
+        instructionsMd: parsed.instructionsMd,
+        difficulty: parsed.difficulty,
+        validationJson: validation,
+        hintsJson: parsed.hints,
+        labSetupJson: parsed.labSetup ?? undefined,
+        aiGenerated: true,
+        status: settings.requireAiApproval ? CONTENT_STATUS.PENDING_REVIEW : CONTENT_STATUS.APPROVED,
+        maxScore: 6,
+      },
+    });
+    await prisma.reviewQueue.updateMany({
+      where: { userId, topicId, completed: false },
+      data: { generatedExerciseId: exercise.id },
+    });
+    return exercise;
+  },
+};
