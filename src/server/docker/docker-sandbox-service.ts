@@ -5,7 +5,12 @@ import { logger } from "@/lib/logger";
 import { prisma } from "@/server/db/prisma";
 import { LAB_STATUS } from "@/config/constants";
 import type { LabSetup, ValidationSpec } from "@/types/domain";
-import { checkToCommand, summarizeValidation, validationSpecSchema } from "@/services/validation/validation-engine";
+import {
+  checkToCommand,
+  describeFailedCheck,
+  summarizeValidation,
+  validationSpecSchema,
+} from "@/services/validation/validation-engine";
 
 function createDocker(): Docker {
   if (process.platform === "win32") {
@@ -66,8 +71,8 @@ export class DockerSandboxService {
       const container = await docker.createContainer({
         Image: input.image ?? env.LAB_IMAGE,
         name: `devops-learn-${lab.id}`,
-        Tty: true,
-        OpenStdin: true,
+        Tty: false,
+        OpenStdin: false,
         Cmd: ["sleep", "infinity"],
         HostConfig: {
           Memory: parseMemory(env.LAB_MEMORY_LIMIT),
@@ -202,10 +207,17 @@ export class DockerSandboxService {
       const mapped = checkToCommand(check);
       const output = await this.execInContainer(lab.containerId!, mapped.command);
       const passed = mapped.interpret(output.exitCode, `${output.stdout}${output.stderr}`);
+      logger.info("lab check", {
+        labId,
+        type: check.type,
+        command: mapped.command.slice(0, 160),
+        exitCode: output.exitCode,
+        passed,
+      });
       results.push({
         type: check.type,
         passed,
-        detail: passed ? "ok" : "check failed",
+        detail: passed ? "ok" : describeFailedCheck(check),
       });
     }
     const summary = summarizeValidation(results);
@@ -248,21 +260,46 @@ export class DockerSandboxService {
   private async execInContainer(containerId: string, command: string) {
     const container = docker.getContainer(containerId);
     const exec = await container.exec({
-      Cmd: ["bash", "-lc", command],
+      Cmd: ["/bin/bash", "-c", command],
       AttachStdout: true,
       AttachStderr: true,
       Tty: false,
       User: "root",
     });
-    const stream = await exec.start({ hijack: true, stdin: false });
+    const stream = (await exec.start({
+      hijack: true,
+      stdin: false,
+      Detach: false,
+      Tty: false,
+    })) as NodeJS.ReadableStream;
     const output = await streamToString(stream);
-    const inspect = await exec.inspect();
+    const inspect = await waitUntilExecFinishes(exec);
+    const exitCode = inspect.ExitCode ?? inspect.exitCode;
     return {
       stdout: output,
       stderr: "",
-      exitCode: inspect.ExitCode ?? 1,
+      exitCode: typeof exitCode === "number" ? exitCode : 1,
     };
   }
+}
+
+type ExecInspect = {
+  Running?: boolean;
+  running?: boolean;
+  ExitCode?: number | null;
+  exitCode?: number | null;
+};
+
+async function waitUntilExecFinishes(exec: { inspect: () => Promise<ExecInspect> }) {
+  let inspect = await exec.inspect();
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (!(inspect.Running ?? inspect.running)) {
+      return inspect;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    inspect = await exec.inspect();
+  }
+  return inspect;
 }
 
 export const dockerSandboxService = new DockerSandboxService();

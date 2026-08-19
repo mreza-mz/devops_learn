@@ -18,6 +18,28 @@ type Props = {
   hints: Hint[];
 };
 
+function terminalPlainText(term: Terminal): string {
+  const buffer = term.buffer.active;
+  let text = "";
+  for (let i = 0; i < buffer.length; i += 1) {
+    const line = buffer.getLine(i);
+    if (!line) continue;
+    text += line.translateToString(true);
+    if (!line.isWrapped) text += "\n";
+  }
+  return text.replace(/\s+$/, "");
+}
+
+async function writeClipboard(text: string): Promise<boolean> {
+  if (!text.trim()) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hints }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -26,6 +48,7 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
   const [status, setStatus] = useState("در حال اتصال");
   const [remaining, setRemaining] = useState(remainingSec);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   useEffect(() => {
@@ -41,6 +64,8 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
       cursorBlink: true,
       disableStdin: false,
       convertEol: true,
+      scrollback: 5000,
+      rightClickSelectsWord: true,
       fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
       fontSize: 14,
       allowProposedApi: true,
@@ -87,6 +112,21 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
       setStatus("خطای اتصال");
       term.writeln("\r\n[lab] websocket error — is the terminal gateway running on port 3001?");
     };
+    term.attachCustomKeyEventHandler((event) => {
+      if (event.type !== "keydown") return true;
+      const withModifier = event.ctrlKey || event.metaKey;
+      const isCopy = withModifier && event.key.toLowerCase() === "c";
+      if (!isCopy) return true;
+      if (event.shiftKey || term.hasSelection()) {
+        event.preventDefault();
+        const text = term.hasSelection() ? term.getSelection() : terminalPlainText(term);
+        void writeClipboard(text).then((ok) => {
+          setCopyStatus(ok ? "متن ترمینال کپی شد." : "کپی نشد؛ دستی انتخاب کنید.");
+        });
+        return false;
+      }
+      return true;
+    });
     const dataDisposable = term.onData((data) => {
       if (socket.readyState === WebSocket.OPEN) {
         socket.send(data);
@@ -115,6 +155,17 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
     setHintsUsed((value) => Math.min(hints.length, value + 1));
   }
 
+  async function copyTerminal() {
+    const term = termRef.current;
+    if (!term) return;
+    const selected = term.hasSelection() ? term.getSelection() : "";
+    const text = selected.trim() ? selected : terminalPlainText(term);
+    const ok = await writeClipboard(text);
+    setCopyStatus(
+      ok ? (selected.trim() ? "متن انتخاب‌شده کپی شد." : "کل خروجی ترمینال کپی شد.") : "مرورگر اجازهٔ کپی نداد.",
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -122,6 +173,9 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
         <Badge>
           زمان باقی‌مانده: {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
         </Badge>
+        <Button size="sm" variant="outline" type="button" onClick={() => void copyTerminal()}>
+          کپی خروجی
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -193,7 +247,11 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
         tabIndex={0}
         onFocus={() => termRef.current?.focus()}
       />
-      <p className="text-xs text-muted-foreground">روی ترمینال کلیک کنید و بعد تایپ کنید. اگر وضعیت «قطع شد» است، Docker Desktop و `npm run dev` را بررسی کنید.</p>
+      {copyStatus ? <p className="text-xs text-success">{copyStatus}</p> : null}
+      <p className="text-xs text-muted-foreground">
+        با ماوس متن را انتخاب کنید و Ctrl+C بزنید، یا «کپی خروجی» را بزنید تا دستورها را در چت بفرستید. Ctrl+C بدون انتخاب، فرآیند را قطع می‌کند.
+        اگر وضعیت «قطع شد» است، Docker Desktop و npm run dev را بررسی کنید.
+      </p>
       <div className="space-y-2">
         <Button size="sm" variant="ghost" type="button" onClick={revealHint} disabled={hintsUsed >= hints.length}>
           نمایش راهنمایی بعدی (کاهش نمره)
@@ -204,7 +262,9 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
           </p>
         ))}
       </div>
-      {feedback ? <p className="rounded-lg bg-muted p-3 text-sm">{feedback}</p> : null}
+      {feedback ? (
+        <p className="whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">{feedback}</p>
+      ) : null}
     </div>
   );
 }

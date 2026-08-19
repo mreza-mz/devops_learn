@@ -8,6 +8,7 @@ import { aiService } from "@/server/ai/service";
 import { ATTEMPT_STATUS } from "@/config/constants";
 import type { Hint, LabSetup } from "@/types/domain";
 import { getEnv } from "@/config/env";
+import { learnerValidationFeedback } from "@/services/validation/validation-engine";
 
 export const labService = {
   async startExerciseLab(userId: string, exerciseId: string) {
@@ -87,8 +88,11 @@ export const labService = {
       instructionsMd: lab.exercise.instructionsMd,
       validationPassed: result.passed,
       scorePercent: result.scorePercent,
-      details: result.results.filter((item) => !item.passed).map((item) => item.type),
+      details: result.results.filter((item) => !item.passed).map((item) => item.detail),
     });
+    const feedbackFa = result.passed
+      ? ai.feedbackFa
+      : learnerValidationFeedback(result.results, false);
     const attempt = await prisma.exerciseAttempt.create({
       data: {
         userId,
@@ -97,7 +101,7 @@ export const labService = {
         score,
         hintsUsed,
         validationResult: result.results,
-        feedbackFa: ai.feedbackFa,
+        feedbackFa,
         completedAt: new Date(),
       },
     });
@@ -107,7 +111,7 @@ export const labService = {
     if (lab.exercise.dailyLessonId) {
       await progressEngine.recalculateDay(userId, lab.exercise.dailyLessonId);
     }
-    return { attempt, result, score, status, feedbackFa: ai.feedbackFa };
+    return { attempt, result, score, status, feedbackFa };
   },
 
   async validateScenario(userId: string, labId: string) {

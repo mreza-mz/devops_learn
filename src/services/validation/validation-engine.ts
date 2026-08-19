@@ -56,6 +56,56 @@ export function summarizeValidation(results: CheckResult[]): { passed: boolean; 
   };
 }
 
+export function describeFailedCheck(check: ValidationCheck): string {
+  switch (check.type) {
+    case "fileExists":
+      return check.path.startsWith("/tmp/")
+        ? `فایل \`${check.path}\` وجود ندارد. مسیر باید با / شروع شود (\`/tmp/...\` نه \`tmp/...\`).`
+        : `فایل \`${check.path}\` وجود ندارد. خروجی فرمان را با > در همین مسیر ذخیره کنید.`;
+    case "directoryExists":
+      return `پوشه \`${check.path}\` وجود ندارد. با mkdir -p بسازید.`;
+    case "fileContains":
+      return check.path.startsWith("/tmp/")
+        ? `داخل \`${check.path}\` متن «${check.text}» پیدا نشد. با cat \`${check.path}\` چک کنید؛ فایل \`tmp/...\` در پوشهٔ فعلی حساب نمی‌شود.`
+        : `داخل \`${check.path}\` متن «${check.text}» پیدا نشد. فایل را با cat بررسی کنید.`;
+    case "userExists":
+      return `کاربر \`${check.name}\`${check.shell ? ` با شل ${check.shell}` : ""} پیدا نشد.`;
+    case "processNotRunning":
+      return `فرآیند \`${check.name}\` هنوز در حال اجرا است.`;
+    case "processRunning":
+      return `فرآیند \`${check.name}\` در حال اجرا نیست.`;
+    case "serviceRunning":
+      return `سرویس \`${check.name}\` فعال نیست.`;
+    case "portOpen":
+      return `پورت ${check.port} در حالت listen نیست.`;
+    case "packageInstalled":
+      return `بستهٔ \`${check.name}\` نصب نشده است.`;
+    case "commandExitCode":
+      return `فرمان اعتبارسنجی کد خروج ${check.expected} نداد.`;
+    case "commandOutputContains":
+      return `خروجی فرمان متن «${check.text}» را نداشت.`;
+    case "dockerContainerRunning":
+      return `کانتینر \`${check.name}\` در حال اجرا نیست.`;
+    case "k8sResourceExists":
+      return `منبع ${check.kind}/${check.name} پیدا نشد.`;
+    default: {
+      const neverCheck: never = check;
+      return `بررسی ناموفق بود: ${JSON.stringify(neverCheck)}`;
+    }
+  }
+}
+
+export function learnerValidationFeedback(results: CheckResult[], passed: boolean): string {
+  if (passed) {
+    return "اعتبارسنجی موفق بود. وضعیت داخل کانتینر با تمرین یکی است.";
+  }
+  const failed = results.filter((item) => !item.passed).map((item) => item.detail);
+  if (failed.length === 0) {
+    return "اعتبارسنجی ناموفق بود.";
+  }
+  return ["این موارد هنوز پاس نشده‌اند:", ...failed.map((detail) => `• ${detail}`)].join("\n");
+}
+
 export function checkToCommand(check: ValidationCheck): { command: string; interpret: (code: number, stdout: string) => boolean } {
   switch (check.type) {
     case "userExists": {

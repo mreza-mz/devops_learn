@@ -136,6 +136,7 @@ model Exercise {
   topicId        String?
   projectTaskId  String?
   titleFa        String
+  lessonSlug     String?
   instructionsMd String
   difficulty     String
   labImage       String            @default("devops-learn-lab:latest")
@@ -154,6 +155,7 @@ model Exercise {
   reviewItems    ReviewQueue[]
 
   @@index([dailyLessonId])
+  @@index([lessonSlug])
 }
 
 model ExerciseAttempt {

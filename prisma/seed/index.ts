@@ -191,6 +191,7 @@ async function main() {
           dailyLessonId: daily.id,
           topicId: topicBySlug.get(exercise.topicSlug),
           titleFa: exercise.titleFa,
+          lessonSlug: exercise.lessonSlug,
           instructionsMd: exercise.instructionsMd,
           difficulty: exercise.difficulty,
           maxScore: exercise.maxScore,

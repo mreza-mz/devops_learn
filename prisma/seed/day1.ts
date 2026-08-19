@@ -16,6 +16,7 @@ type DaySeed = {
   exercises: {
     titleFa: string;
     topicSlug: string;
+    lessonSlug?: string;
     instructionsMd: string;
     difficulty: string;
     maxScore: number;
@@ -53,85 +54,166 @@ export const days: DaySeed[] = [
   {
     dayNumber: 1,
     titleFa: "مبانی لینوکس",
-    objectiveFa: "معماری لینوکس، سیستم فایل، فرمان‌های پایه، کاربران و فرآیندها را بشناسید و روی یک سرور کند عیب‌یابی کنید.",
+    objectiveFa:
+      "از صفر، قدم‌به‌قدم لینوکس را بشناسید: لایه‌ها، پوشه‌ها، فرمان‌های روزمره، کاربر و فرآیند. بعد از هر قدم چند تمرین کوتاه انجام می‌دهید.",
     topicSlugs: ["linux-filesystem", "users-groups", "processes", "cpu", "memory", "disk"],
     lessons: [
       {
         slug: "linux-architecture",
         topicSlug: "linux-filesystem",
-        titleFa: "معماری لینوکس",
-        objectiveFa: "لایه‌های کرنل، شل و فضای کاربر را تشخیص دهید.",
-        theoryMd: `لینوکس یک سیستم‌عامل شبه یونیکس است. سه لایه را همیشه جدا کنید:
+        titleFa: "لینوکس از چه ساخته شده؟",
+        objectiveFa: "سه لایهٔ کرنل، فضای کاربر و شل را با مثال ساده از هم جدا کنید.",
+        theoryMd: `لینوکس یک سیستم‌عامل است؛ یعنی برنامه‌ای که بین شما و سخت‌افزار می‌ایستد و اجازه می‌دهد از CPU، حافظه، دیسک و شبکه استفاده کنید.
 
-1. **کرنل**: سخت‌افزار، فرآیند، حافظه، دیسک و شبکه را مدیریت می‌کند.
-2. **فضای کاربر (user space)**: برنامه‌ها، شل، systemd و سرویس‌ها.
-3. **شل**: واسط بین شما و کرنل؛ معمولاً Bash.
+مثل یک ساختمان فکر کنید:
 
-در تولید، وقتی سرور «کند» است، مشکل ممکن است در کرنل (I/O wait)، در فضای کاربر (فرآیند بد)، یا در پیکربندی باشد. بدون این مدل ذهنی، دستورها را شانسی اجرا می‌کنید.`,
-        practicalMd: `با \`uname -a\` نسخه کرنل را ببینید. \`ls /proc\` نشان می‌دهد کرنل چه اطلاعاتی را به صورت فایل نمایش می‌دهد. \`echo $SHELL\` شل فعلی را مشخص می‌کند.`,
+1. **کرنل (هسته)**: مدیر ساختمان. سخت‌افزار را او مدیریت می‌کند. شما مستقیم با کرنل حرف نمی‌زنید.
+2. **فضای کاربر**: ساکنان ساختمان. برنامه‌ها، سرویس‌ها و فایل‌های شما این‌جا هستند.
+3. **شل**: میز پذیرش. شما فرمان می‌نویسید؛ شل آن را به کرنل می‌رساند. در این دوره شل معمولاً **Bash** است.
+
+سه سؤال ساده که با فرمان جواب داده می‌شوند:
+
+- این ماشین چه کرنلی دارد؟ → \`uname -a\`
+- چه توزیعی نصب است (مثلاً اوبونتو)؟ → \`cat /etc/os-release\`
+- شل فعلی من چیست؟ → \`echo $SHELL\`
+
+فعلاً لازم نیست تولید یا عیب‌یابی سرور را بلد باشید. فقط این مدل سه‌لایه را در ذهن نگه دارید؛ بقیهٔ فرمان‌ها روی همین مدل سوار می‌شوند.`,
+        practicalMd: `در آزمایشگاه این دوره، ترمینال معمولاً با کاربر \`root\` باز می‌شود و شما در \`/root\` هستید (علامت \`~\`). اول همین سه فرمان را اجرا کنید و خروجی را بخوانید؛ لازم نیست همهٔ کلمات را بفهمید.
+
+وقتی تمرین می‌گوید \`/tmp/...\` یعنی مسیر مطلق از ریشه. اگر بنویسید \`tmp/...\` فایل کنار خودتان ساخته می‌شود و اعتبارسنجی آن را نمی‌بیند.
+
+بعد از خواندن این قدم، تمرین‌های همین بخش را انجام دهید.`,
         exampleMd: `\`\`\`bash
 uname -a
 cat /etc/os-release
 echo $SHELL
-ls /proc | head
-\`\`\``,
+\`\`\`
+
+\`uname\` یعنی «تو کی هستی؟» برای کرنل. \`echo $SHELL\` مقدار متغیر محیطی شل را چاپ می‌کند.`,
         commands: ["uname -a", "cat /etc/os-release", "echo $SHELL"],
       },
       {
         slug: "filesystem",
         topicSlug: "linux-filesystem",
-        titleFa: "سیستم فایل",
-        objectiveFa: "درخت FHS را بشناسید و بین فایل، دایرکتوری و لینک فرق بگذارید.",
-        theoryMd: `در لینوکس «همه‌چیز فایل است». درخت استاندارد (FHS):
+        titleFa: "پوشه‌ها و مسیرها",
+        objectiveFa: "از ریشه (/) حرکت کنید و فرق مسیر مطلق و نسبی را بفهمید.",
+        theoryMd: `در لینوکس تقریباً **همه‌چیز مثل فایل دیده می‌شود**: پوشه، دستگاه، حتی اطلاعات کرنل.
 
-- \`/\` ریشه
-- \`/bin\` و \`/usr/bin\` فرمان‌ها
-- \`/etc\` پیکربندی
-- \`/home\` خانه کاربران
-- \`/var\` داده متغیر مثل لاگ
-- \`/tmp\` موقت
-- \`/proc\` و \`/sys\` واسط کرنل
+همه چیز از یک ریشه شروع می‌شود: \`/\`
 
-مسیر مطلق از \`/\` شروع می‌شود. مسیر نسبی از دایرکتوری فعلی است. \`.\` همین‌جا و \`..\` والد است.`,
-        practicalMd: `با \`pwd\`, \`ls -la\`, \`cd\`, \`find\` و \`tree\` (اگر نصب باشد) حرکت کنید. هرگز در تولید بدون تأیید در \`/\` فایل نسازید.`,
+چند پوشهٔ مهم که همین هفته با آن‌ها کار می‌کنید:
+
+| مسیر | یعنی چه؟ |
+| --- | --- |
+| \`/\` | ریشه؛ بالای درخت |
+| \`/home\` | خانهٔ کاربران معمولی |
+| \`/etc\` | فایل‌های پیکربندی |
+| \`/var/log\` | لاگ‌ها |
+| \`/tmp\` | فایل موقت |
+| \`/bin\` و \`/usr/bin\` | فرمان‌های اجرایی |
+
+**مسیر مطلق** از \`/\` شروع می‌شود. مثال: \`/home/student/workspace\`
+
+**مسیر نسبی** از جایی که الان هستید حساب می‌شود.
+
+دو میانبر همیشگی:
+
+- \`.\` یعنی همین پوشه
+- \`..\` یعنی پوشهٔ والد (یک سطح بالاتر)
+
+سه فرمان حرکت:
+
+- \`pwd\`: الان کجا هستم؟
+- \`ls\`: این‌جا چه چیزی هست؟ \`ls -la\` جزئیات و فایل‌های مخفی را هم نشان می‌دهد
+- \`cd\`: برو به پوشهٔ دیگر`,
+        practicalMd: `اول \`pwd\` بزنید تا بفهمید کجا ایستاده‌اید. بعد \`ls -la /\` را ببینید؛ همان پوشه‌های جدول بالا را در خروجی پیدا کنید.
+
+با \`cd /etc\` وارد پیکربندی شوید و دوباره \`pwd\` بزنید. با \`cd ..\` یک سطح برگردید.
+
+هرگز در \`/\` فایل تمرینی نسازید؛ فضای کار شما \`/home/student/workspace\` است.`,
         exampleMd: `\`\`\`bash
 pwd
 ls -la /
-cd /etc && ls
-ls /var/log | head
+cd /etc
+pwd
+ls | head
+cd /home/student/workspace
+pwd
 \`\`\``,
         commands: ["pwd", "ls -la /", "cd /etc", "ls /var/log"],
       },
       {
         slug: "basic-commands",
         topicSlug: "linux-filesystem",
-        titleFa: "فرمان‌های پایه",
-        objectiveFa: "ساخت، مشاهده، کپی و جست‌وجوی فایل را انجام دهید.",
-        theoryMd: `فرمان‌های روزمره SRE:
+        titleFa: "فرمان‌های ساخت و مشاهدهٔ فایل",
+        objectiveFa: "پوشه و فایل بسازید، محتوا را ببینید و کپی کنید.",
+        theoryMd: `حالا که می‌توانید حرکت کنید، نوبت ساختن و خواندن است. فرمان‌ها را در سه گروه یاد بگیرید؛ همه را یک‌جا حفظ نکنید.
 
-- \`ls\`, \`cd\`, \`pwd\`
-- \`mkdir\`, \`touch\`, \`cp\`, \`mv\`, \`rm\`
-- \`cat\`, \`less\`, \`head\`, \`tail\`
-- \`grep\`, \`find\`, \`wc\`
+**گروه ۱ — ساختن**
 
-\`rm -rf\` بدون مسیر دقیق خطرناک است. در آزمایشگاه هم عادت تأیید مسیر را تمرین کنید.`,
-        practicalMd: `یک فضای کار در \`/home/student/workspace\` بسازید، فایل یادداشت ایجاد کنید و محتوا را با \`cat\` ببینید.`,
+- \`mkdir نام\`: پوشه بساز
+- \`mkdir -p مسیر/تو در تو\`: چند سطح را یکجا بساز؛ اگر وجود داشته باشد خطا نمی‌دهد
+- \`touch فایل\`: فایل خالی بساز
+- \`echo متن > فایل\`: متن را در فایل بنویس (اگر فایل باشد، محتوایش عوض می‌شود)
+
+**گروه ۲ — خواندن**
+
+- \`cat فایل\`: کل محتوا
+- \`head فایل\`: چند خط اول
+- \`tail فایل\`: چند خط آخر
+- \`wc -l فایل\`: تعداد خط
+
+**گروه ۳ — جابه‌جایی**
+
+- \`cp مبدأ مقصد\`: کپی
+- \`mv مبدأ مقصد\`: جابه‌جا یا تغییر نام
+- \`rm فایل\`: حذف فایل
+
+\`rm -rf\` کل یک درخت را بدون سؤال پاک می‌کند. حتی در آزمایشگاه، قبل از Enter مسیر را دوباره بخوانید.
+
+علامت \`>\` خروجی فرمان را به فایل می‌فرستد. این همان کاری است که در تمرین‌ها زیاد انجام می‌دهید.`,
+        practicalMd: `یک فضای کار بسازید، یک فایل یادداشت بنویسید، با \`cat\` بخوانید، بعد یک کپی بگیرید.
+
+اگر فرمان را اشتباه زدید، نگران نباشید؛ فایل را دوباره با \`echo\` بنویسید.`,
         exampleMd: `\`\`\`bash
 mkdir -p /home/student/workspace
-echo "hello" > /home/student/workspace/notes.txt
+echo "سلام لینوکس" > /home/student/workspace/notes.txt
 cat /home/student/workspace/notes.txt
+cp /home/student/workspace/notes.txt /home/student/workspace/notes.bak
+ls /home/student/workspace
 \`\`\``,
-        commands: ["mkdir -p /home/student/workspace", "echo hello > /home/student/workspace/notes.txt", "cat /home/student/workspace/notes.txt"],
+        commands: [
+          "mkdir -p /home/student/workspace",
+          "echo hello > /home/student/workspace/notes.txt",
+          "cat /home/student/workspace/notes.txt",
+        ],
       },
       {
         slug: "users",
         topicSlug: "users-groups",
-        titleFa: "کاربران",
-        objectiveFa: "مدل کاربر، گروه و شل ورود را بفهمید.",
-        theoryMd: `هر فرآیند با یک UID اجرا می‌شود. فایل \`/etc/passwd\` کاربران را نگه می‌دارد و \`/etc/shadow\` هش رمز را. گروه در \`/etc/group\` است.
+        titleFa: "کاربر یعنی چه؟",
+        objectiveFa: "بفهمید با چه هویتی وارد شده‌اید و کاربر جدید چطور ساخته می‌شود.",
+        theoryMd: `هر کاری در لینوکس **از طرف یک کاربر** انجام می‌شود. فایل‌ها مالک دارند؛ برنامه‌ها هم با هویت یک کاربر اجرا می‌شوند.
 
-کاربر سیستمی (مثل \`www-data\`) برای سرویس است؛ کاربر انسانی شل ورود دارد. در تولید، سرویس را با root اجرا نکنید.`,
-        practicalMd: `\`id\`, \`whoami\`, \`getent passwd\` و \`useradd\` را بشناسید. برای ساخت کاربر سرویس از \`--create-home\` و شل مشخص استفاده کنید.`,
+دو فرمان اول هویت:
+
+- \`whoami\`: نام کاربر فعلی
+- \`id\`: شناسهٔ عددی (UID)، گروه اصلی و گروه‌ها
+
+در این آزمایشگاه معمولاً \`whoami\` مقدار \`root\` می‌دهد. \`root\` مدیر کل سیستم است و تقریباً هر کاری می‌تواند بکند. در سرور واقعی، کار روزمره را با کاربر معمولی انجام می‌دهند و \`root\` را فقط وقتی لازم است استفاده می‌کنند.
+
+فهرست کاربران در \`/etc/passwd\` است. هر خط یک کاربر است. برای دیدن یک کاربر مشخص:
+
+\`getent passwd root\`
+
+کاربر انسانی معمولاً شل ورود دارد (مثلاً \`/bin/bash\`). کاربر سرویس (مثل \`www-data\`) برای اجرای برنامه است، نه برای نشستن پشت ترمینال.
+
+ساخت کاربر جدید با \`useradd\` است. گزینهٔ \`-s\` شل ورود را مشخص می‌کند. گروه‌ها و مجوز فایل را فردا دقیق‌تر می‌بینید.`,
+        practicalMd: `اول \`whoami\` و \`id\` را اجرا کنید و خروجی را بخوانید.
+
+بعد \`getent passwd root\` را ببینید؛ فیلد آخر معمولاً شل ورود است.
+
+در تمرین، یک کاربر به نام \`deploy\` می‌سازید؛ این الگوی رایجی برای استقرار برنامه است.`,
         exampleMd: `\`\`\`bash
 whoami
 id
@@ -142,12 +224,31 @@ getent passwd root
       {
         slug: "processes",
         topicSlug: "processes",
-        titleFa: "فرآیندها",
-        objectiveFa: "PID، والد، وضعیت و مصرف منابع را بخوانید.",
-        theoryMd: `هر برنامه در حال اجرا یک فرآیند است با PID. \`ps\` عکس لحظه‌ای می‌گیرد، \`top\` زنده است. ستون‌های مهم: \`%CPU\`, \`%MEM\`, \`STAT\`, \`COMMAND\`.
+        titleFa: "فرآیند: برنامهٔ در حال اجرا",
+        objectiveFa: "PID را بشناسید و CPU، حافظه و دیسک را با یک نگاه چک کنید.",
+        theoryMd: `وقتی برنامه‌ای را اجرا می‌کنید، لینوکس یک **فرآیند** می‌سازد. هر فرآیند یک شمارهٔ یکتا دارد: **PID** (مثل کد ملی برای برنامه).
 
-STAT رایج: \`R\` در حال اجرا، \`S\` خواب، \`Z\` زامبی، \`D\` خواب غیرقابل‌وقفه (معمولاً I/O).`,
-        practicalMd: `با \`ps aux --sort=-%cpu | head\` پرمصرف‌ها را پیدا کنید. \`free -m\` حافظه و \`df -h\` دیسک را نشان می‌دهد.`,
+دو ابزار رایج:
+
+- \`ps\`: عکس لحظه‌ای از فرآیندها. \`ps aux\` فهرست کامل است.
+- \`top\`: نمای زنده. با \`q\` خارج می‌شوید.
+
+در خروجی \`ps\` این ستون‌ها را ببینید: \`PID\`، \`%CPU\`، \`%MEM\`، \`COMMAND\`.
+
+وضعیت کوتاه فرآیند (\`STAT\`):
+
+- \`R\`: در حال اجرا یا آمادهٔ اجرا
+- \`S\`: خواب (منتظر چیزی)
+- \`Z\`: زامبی (تمام شده ولی هنوز جمع نشده)
+
+برای سلامت کلی ماشین، سه فرمان کمکی:
+
+- \`uptime\`: از کی روشن است و بار سیستم چقدر است
+- \`free -m\`: حافظه به مگابایت
+- \`df -h\`: فضای دیسک با واحد خوانا
+
+اگر روزی گفتند «سرور کند است»، ترتیب ساده این است: \`uptime\` → \`ps\` یا \`top\` → \`free\` → \`df\`. امروز فقط نگاه کردن را تمرین می‌کنید؛ کشتن فرآیند را در روزهای بعد می‌بینید.`,
+        practicalMd: `\`ps aux --sort=-%cpu | head\` پرمصرف‌ترین‌ها را بالای فهرست می‌آورد. \`free -m\` و \`df -h\` را هم یک‌بار ذخیره کنید تا بعداً با خروجی آشنا شوید.`,
         exampleMd: `\`\`\`bash
 ps aux --sort=-%cpu | head
 free -m
@@ -159,9 +260,81 @@ uptime
     ],
     exercises: [
       {
+        titleFa: "نسخهٔ کرنل را ذخیره کنید",
+        topicSlug: "linux-filesystem",
+        lessonSlug: "linux-architecture",
+        instructionsMd: `خروجی فرمان \`uname -a\` را در فایل \`/tmp/uname.txt\` ذخیره کنید.
+
+**مسیر مهم است.** اسلش اول یعنی از ریشه:
+
+- \`tmp/uname.txt\` یعنی پوشهٔ tmp همین‌جا (معمولاً \`/root/tmp\`) — اعتبارسنجی این را قبول نمی‌کند.
+- \`/tmp/uname.txt\` یعنی پوشهٔ موقت سیستم — همین را می‌خواهیم.
+
+\`/tmp\` از قبل وجود دارد؛ \`mkdir\` لازم نیست.
+
+\`\`\`bash
+uname -a > /tmp/uname.txt
+cat /tmp/uname.txt
+\`\`\``,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileExists", path: "/tmp/uname.txt" },
+            { type: "fileContains", path: "/tmp/uname.txt", text: "Linux" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "مسیر باید با / شروع شود: /tmp نه tmp." },
+          { level: 2, textFa: "پوشهٔ /tmp از قبل هست؛ فقط خروجی را با > در /tmp/uname.txt بنویسید." },
+          { level: 3, textFa: "uname -a > /tmp/uname.txt" },
+        ],
+      },
+      {
+        titleFa: "شل فعلی را پیدا کنید",
+        topicSlug: "linux-filesystem",
+        lessonSlug: "linux-architecture",
+        instructionsMd: `مقدار شل فعلی را در \`/tmp/shell.txt\` بنویسید (با اسلش اول؛ نه \`tmp/shell.txt\`).
+
+متغیر \`SHELL\` را با \`echo\` چاپ کنید و به همان فایل بفرستید.`,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileExists", path: "/tmp/shell.txt" },
+            { type: "fileContains", path: "/tmp/shell.txt", text: "bin" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "نام متغیر را با $ می‌نویسند؛ مثلاً $SHELL." },
+          { level: 2, textFa: "echo مقدار را چاپ می‌کند؛ با > آن را در فایل بگذارید." },
+          { level: 3, textFa: "echo $SHELL > /tmp/shell.txt" },
+        ],
+      },
+      {
+        titleFa: "توزیع سیستم‌عامل را ثبت کنید",
+        topicSlug: "linux-filesystem",
+        lessonSlug: "linux-architecture",
+        instructionsMd: `محتوای \`/etc/os-release\` را در \`/tmp/os-release.txt\` کپی کنید تا بعداً ببینید این ماشین چه توزیعی است.`,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileExists", path: "/tmp/os-release.txt" },
+            { type: "fileContains", path: "/tmp/os-release.txt", text: "Ubuntu" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "cat فایل را می‌خواند؛ خروجی‌اش را می‌توانید redirect کنید." },
+          { level: 2, textFa: "مبدأ /etc/os-release است و مقصد /tmp/os-release.txt." },
+          { level: 3, textFa: "cat /etc/os-release > /tmp/os-release.txt" },
+        ],
+      },
+      {
         titleFa: "پیمایش سیستم فایل",
         topicSlug: "linux-filesystem",
-        instructionsMd: `دایرکتوری \`/home/student/workspace\` را بسازید. سپس فایل \`/home/student/workspace/pwd.txt\` را ایجاد کنید و خروجی \`pwd\` را وقتی داخل همان دایرکتوری هستید در آن بنویسید.`,
+        lessonSlug: "filesystem",
+        instructionsMd: `دایرکتوری \`/home/student/workspace\` را بسازید (اگر نیست). سپس وارد همان دایرکتوری شوید و خروجی \`pwd\` را در \`/home/student/workspace/pwd.txt\` بنویسید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -178,8 +351,50 @@ uptime
         ],
       },
       {
+        titleFa: "فهرست ریشه را ببینید",
+        topicSlug: "linux-filesystem",
+        lessonSlug: "filesystem",
+        instructionsMd: `خروجی \`ls /\` را در \`/home/student/workspace/root-listing.txt\` ذخیره کنید.
+
+بعد از ذخیره، فایل را با \`cat\` باز کنید و پوشه‌هایی مثل \`etc\` و \`var\` را پیدا کنید.`,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileExists", path: "/home/student/workspace/root-listing.txt" },
+            { type: "fileContains", path: "/home/student/workspace/root-listing.txt", text: "etc" },
+            { type: "fileContains", path: "/home/student/workspace/root-listing.txt", text: "var" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "اول مطمئن شوید /home/student/workspace وجود دارد." },
+          { level: 2, textFa: "ls / را به فایل workspace هدایت کنید." },
+          { level: 3, textFa: "mkdir -p /home/student/workspace && ls / > /home/student/workspace/root-listing.txt" },
+        ],
+      },
+      {
+        titleFa: "مسیر لاگ‌ها را بنویسید",
+        topicSlug: "linux-filesystem",
+        lessonSlug: "filesystem",
+        instructionsMd: `طبق درخت سیستم فایل، لاگ‌های سنتی لینوکس در کدام مسیر هستند؟ همان مسیر را (فقط خود مسیر) در \`/home/student/workspace/logs-path.txt\` بنویسید.`,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileExists", path: "/home/student/workspace/logs-path.txt" },
+            { type: "fileContains", path: "/home/student/workspace/logs-path.txt", text: "/var/log" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "پوشهٔ var برای داده‌های متغیر مثل لاگ است." },
+          { level: 2, textFa: "مسیر کامل با / شروع می‌شود." },
+          { level: 3, textFa: "echo /var/log > /home/student/workspace/logs-path.txt" },
+        ],
+      },
+      {
         titleFa: "ساخت دایرکتوری و فایل",
         topicSlug: "linux-filesystem",
+        lessonSlug: "basic-commands",
         instructionsMd: `مسیر \`/opt/app/data\` را بسازید و فایل \`/opt/app/README.txt\` با متن \`devops-learn\` ایجاد کنید.`,
         difficulty: "easy",
         maxScore: 6,
@@ -196,9 +411,66 @@ uptime
         ],
       },
       {
+        titleFa: "کپی یک فایل یادداشت",
+        topicSlug: "linux-filesystem",
+        lessonSlug: "basic-commands",
+        instructionsMd: `فایل \`/home/student/workspace/notes.txt\` را با متن \`hello\` بسازید. سپس یک کپی از آن به نام \`/home/student/workspace/notes.bak\` بگیرید.`,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileContains", path: "/home/student/workspace/notes.txt", text: "hello" },
+            { type: "fileContains", path: "/home/student/workspace/notes.bak", text: "hello" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "اول فایل را با echo بسازید." },
+          { level: 2, textFa: "فرمان کپی cp است: cp مبدأ مقصد." },
+          { level: 3, textFa: "echo hello > /home/student/workspace/notes.txt && cp /home/student/workspace/notes.txt /home/student/workspace/notes.bak" },
+        ],
+      },
+      {
+        titleFa: "هویت کاربر فعلی",
+        topicSlug: "users-groups",
+        lessonSlug: "users",
+        instructionsMd: `خروجی \`whoami\` را در \`/tmp/whoami.txt\` و خروجی \`id\` را در \`/tmp/id.txt\` ذخیره کنید.`,
+        difficulty: "easy",
+        maxScore: 6,
+        validation: {
+          checks: [
+            { type: "fileExists", path: "/tmp/whoami.txt" },
+            { type: "fileExists", path: "/tmp/id.txt" },
+            { type: "fileContains", path: "/tmp/whoami.txt", text: "root" },
+            { type: "fileContains", path: "/tmp/id.txt", text: "uid=" },
+          ],
+        },
+        hints: [
+          { level: 1, textFa: "هر فرمان را جداگانه به فایل خودش بفرستید." },
+          { level: 2, textFa: "whoami نام را می‌دهد؛ id جزئیات UID را." },
+          { level: 3, textFa: "whoami > /tmp/whoami.txt && id > /tmp/id.txt" },
+        ],
+      },
+      {
+        titleFa: "ایجاد کاربر لینوکس",
+        topicSlug: "users-groups",
+        lessonSlug: "users",
+        instructionsMd: `کاربری به نام \`deploy\` با شل \`/bin/bash\` بسازید. خانهٔ کاربر لازم نیست پیچیده باشد؛ مهم این است که کاربر وجود داشته باشد و شل درست باشد.`,
+        difficulty: "medium",
+        maxScore: 6,
+        validation: {
+          checks: [{ type: "userExists", name: "deploy", shell: "/bin/bash" }],
+        },
+        hints: [
+          { level: 1, textFa: "ساخت کاربر با useradd انجام می‌شود." },
+          { level: 2, textFa: "گزینه -s شل ورود را مشخص می‌کند." },
+          { level: 3, textFa: "useradd -s /bin/bash deploy" },
+        ],
+      },
+      {
         titleFa: "بررسی فرآیندها",
         topicSlug: "processes",
-        instructionsMd: `خروجی \`ps aux\` را در \`/tmp/ps.txt\` ذخیره کنید.`,
+        lessonSlug: "processes",
+        instructionsMd: `خروجی \`ps aux\` را در \`/tmp/ps.txt\` ذخیره کنید تا فهرست فرآیندها را داشته باشید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -214,8 +486,9 @@ uptime
         ],
       },
       {
-        titleFa: "مصرف منابع",
+        titleFa: "مصرف حافظه و دیسک",
         topicSlug: "memory",
+        lessonSlug: "processes",
         instructionsMd: `خروجی \`free -m\` را در \`/tmp/free.txt\` و خروجی \`df -h\` را در \`/tmp/df.txt\` ذخیره کنید.`,
         difficulty: "easy",
         maxScore: 6,
@@ -230,21 +503,6 @@ uptime
           { level: 1, textFa: "دو فرمان جدا را به دو فایل بفرستید." },
           { level: 2, textFa: "free حافظه و df دیسک را نشان می‌دهد." },
           { level: 3, textFa: "free -m > /tmp/free.txt && df -h > /tmp/df.txt" },
-        ],
-      },
-      {
-        titleFa: "ایجاد کاربر لینوکس",
-        topicSlug: "users-groups",
-        instructionsMd: `کاربری به نام \`deploy\` با شل \`/bin/bash\` بسازید. خانه کاربر لازم نیست پیچیده باشد؛ مهم این است که کاربر وجود داشته باشد و شل درست باشد.`,
-        difficulty: "medium",
-        maxScore: 6,
-        validation: {
-          checks: [{ type: "userExists", name: "deploy", shell: "/bin/bash" }],
-        },
-        hints: [
-          { level: 1, textFa: "ساخت کاربر با useradd انجام می‌شود." },
-          { level: 2, textFa: "گزینه -s شل ورود را مشخص می‌کند." },
-          { level: 3, textFa: "useradd -s /bin/bash deploy" },
         ],
       },
     ],

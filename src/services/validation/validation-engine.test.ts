@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkToCommand, summarizeValidation, validationSpecSchema } from "@/services/validation/validation-engine";
+import { checkToCommand, describeFailedCheck, learnerValidationFeedback, summarizeValidation, validationSpecSchema } from "@/services/validation/validation-engine";
 import { generatedExerciseSchema, generatedLessonSchema, loginSchema } from "@/validators/ai";
 
 describe("validation engine", () => {
@@ -27,6 +27,16 @@ describe("validation engine", () => {
         { type: "b", passed: false, detail: "no" },
       ]),
     ).toEqual({ passed: false, scorePercent: 50 });
+  });
+
+  it("explains a missing file in Persian", () => {
+    expect(describeFailedCheck({ type: "fileExists", path: "/tmp/uname.txt" })).toContain("/tmp/uname.txt");
+    expect(
+      learnerValidationFeedback(
+        [{ type: "fileExists", passed: false, detail: "فایل `/tmp/uname.txt` وجود ندارد." }],
+        false,
+      ),
+    ).toContain("/tmp/uname.txt");
   });
 });
 
