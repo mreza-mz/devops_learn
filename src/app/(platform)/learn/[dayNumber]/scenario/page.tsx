@@ -38,7 +38,18 @@ export default async function ScenarioPage({ params }: { params: Promise<{ dayNu
       <Card>
         <CardTitle>ترمینال حادثه</CardTitle>
         <div className="mt-4">
-          <StartScenarioLab scenarioId={day.scenario.id} />
+          <StartScenarioLab
+            scenarioId={day.scenario.id}
+            hints={
+              day.dayNumber === 1
+                ? [
+                    { level: 1, textFa: "اول uptime و بعد ps aux --sort=-%cpu | head را بزنید." },
+                    { level: 2, textFa: "فرآیند بالای فهرست با CPU بالا را پیدا کنید. در این سناریو اغلب yes است." },
+                    { level: 3, textFa: "kill PID را بزنید؛ PID را از ستون ps بردارید. بعد اعتبارسنجی کنید." },
+                  ]
+                : []
+            }
+          />
         </div>
       </Card>
     </div>

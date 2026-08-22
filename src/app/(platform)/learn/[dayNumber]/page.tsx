@@ -31,7 +31,7 @@ export default async function DayPage({ params }: { params: Promise<{ dayNumber:
         <p className="mt-2 text-3xl font-bold">{Math.round(progress?.totalScore ?? 0)}/100</p>
         <Progress className="mt-3" value={progress?.totalScore ?? 0} />
       </Card>
-      <LessonSteps day={day} theoryCompleted={Boolean(progress?.theoryCompleted)} />
+      <LessonSteps day={day} theoryCompleted={Boolean(progress?.theoryCompleted)} userId={user.id} />
     </div>
   );
 }

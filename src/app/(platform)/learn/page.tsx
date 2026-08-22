@@ -35,7 +35,7 @@ export default async function LearnIndexPage() {
           {Math.round(progress?.scenarioScore ?? 0)} · آزمون {Math.round(progress?.examScore ?? 0)}
         </p>
       </Card>
-      <LessonSteps day={day} theoryCompleted={Boolean(progress?.theoryCompleted)} />
+      <LessonSteps day={day} theoryCompleted={Boolean(progress?.theoryCompleted)} userId={user.id} />
     </div>
   );
 }

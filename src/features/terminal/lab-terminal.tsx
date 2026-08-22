@@ -240,13 +240,15 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
           اعتبارسنجی
         </Button>
       </div>
-      <div
-        ref={hostRef}
-        className="lab-terminal h-[420px] overflow-hidden rounded-xl border bg-black p-2"
-        dir="ltr"
-        tabIndex={0}
-        onFocus={() => termRef.current?.focus()}
-      />
+      <div className="h-[420px] overflow-hidden rounded-xl border bg-black px-2 pt-2 pb-5">
+        <div
+          ref={hostRef}
+          className="lab-terminal h-full overflow-hidden"
+          dir="ltr"
+          tabIndex={0}
+          onFocus={() => termRef.current?.focus()}
+        />
+      </div>
       {copyStatus ? <p className="text-xs text-success">{copyStatus}</p> : null}
       <p className="text-xs text-muted-foreground">
         با ماوس متن را انتخاب کنید و Ctrl+C بزنید، یا «کپی خروجی» را بزنید تا دستورها را در چت بفرستید. Ctrl+C بدون انتخاب، فرآیند را قطع می‌کند.

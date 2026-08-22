@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { startScenarioAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { LabTerminal } from "@/features/terminal/lab-terminal";
+import type { Hint } from "@/types/domain";
 
-export function StartScenarioLab({ scenarioId }: { scenarioId: string }) {
+export function StartScenarioLab({ scenarioId, hints = [] }: { scenarioId: string; hints?: Hint[] }) {
   const [session, setSession] = useState<{ labId: string; token: string; gatewayUrl: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -18,7 +19,7 @@ export function StartScenarioLab({ scenarioId }: { scenarioId: string }) {
         token={session.token}
         gatewayUrl={session.gatewayUrl}
         remainingSec={1800}
-        hints={[]}
+        hints={hints}
       />
     );
   }

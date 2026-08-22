@@ -3,9 +3,13 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SafeMarkdown } from "@/components/safe-markdown";
 import { CompleteTheoryButton } from "@/features/learn/complete-theory-button";
+import { prisma } from "@/server/db/prisma";
+import { ATTEMPT_STATUS } from "@/config/constants";
+import { cn } from "@/lib/utils";
 import type { learningService } from "@/services/learning/daily-learning-service";
 
 type Day = Awaited<ReturnType<typeof learningService.getDay>>;
+type ExerciseStatus = "PASSED" | "EXCELLENT" | "FAILED" | "IN_PROGRESS" | null;
 
 const difficultyFa: Record<string, string> = {
   easy: "آسان",
@@ -20,13 +24,40 @@ function exercisesForLesson(lesson: Day["lessons"][number], exercises: Day["exer
   return exercises.filter((exercise) => exercise.topicId && exercise.topicId === lesson.topicId);
 }
 
-export function LessonSteps({
+function bestExerciseStatus(statuses: string[]): ExerciseStatus {
+  if (statuses.includes(ATTEMPT_STATUS.EXCELLENT)) return "EXCELLENT";
+  if (statuses.includes(ATTEMPT_STATUS.PASSED)) return "PASSED";
+  if (statuses.includes(ATTEMPT_STATUS.FAILED)) return "FAILED";
+  if (statuses.includes(ATTEMPT_STATUS.IN_PROGRESS)) return "IN_PROGRESS";
+  return null;
+}
+
+function isDone(status: ExerciseStatus) {
+  return status === "PASSED" || status === "EXCELLENT";
+}
+
+export async function LessonSteps({
   day,
   theoryCompleted,
+  userId,
 }: {
   day: Day;
   theoryCompleted: boolean;
+  userId: string;
 }) {
+  const attempts =
+    day.exercises.length === 0
+      ? []
+      : await prisma.exerciseAttempt.findMany({
+          where: { userId, exerciseId: { in: day.exercises.map((exercise) => exercise.id) } },
+          select: { exerciseId: true, status: true },
+        });
+  const statusByExercise = new Map<string, ExerciseStatus>();
+  for (const exercise of day.exercises) {
+    const statuses = attempts.filter((item) => item.exerciseId === exercise.id).map((item) => item.status);
+    statusByExercise.set(exercise.id, bestExerciseStatus(statuses));
+  }
+
   const useLessonSlug = day.exercises.some((exercise) => exercise.lessonSlug);
   const grouped = day.lessons.map((lesson) => ({
     lesson,
@@ -44,13 +75,18 @@ export function LessonSteps({
           هر قدم را بخوانید، بعد همان‌جا تمرین‌های همان قدم را انجام دهید. لازم نیست همه را یکجا حفظ کنید.
         </p>
         <ol className="mt-4 space-y-2 text-sm">
-          {day.lessons.map((lesson, index) => (
-            <li key={lesson.id}>
-              <a className="text-primary" href={`#lesson-${lesson.slug}`}>
-                قدم {index + 1} · {lesson.titleFa}
-              </a>
-            </li>
-          ))}
+          {grouped.map(({ lesson, exercises }, index) => {
+            const doneCount = exercises.filter((exercise) => isDone(statusByExercise.get(exercise.id) ?? null)).length;
+            const allDone = exercises.length > 0 && doneCount === exercises.length;
+            return (
+              <li key={lesson.id} className="flex flex-wrap items-center gap-2">
+                <a className={cn("text-primary", allDone && "text-success")} href={`#lesson-${lesson.slug}`}>
+                  قدم {index + 1} · {lesson.titleFa}
+                </a>
+                {allDone ? <Badge tone="success">تمرین‌ها انجام شد</Badge> : null}
+              </li>
+            );
+          })}
         </ol>
       </Card>
 
@@ -82,20 +118,14 @@ export function LessonSteps({
               </p>
               <ol className="mt-4 space-y-3">
                 {exercises.map((exercise, exerciseIndex) => (
-                  <li key={exercise.id} className="rounded-xl border bg-card p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-medium">
-                        {exerciseIndex + 1}. {exercise.titleFa}
-                      </p>
-                      <Badge tone="muted">{difficultyFa[exercise.difficulty] ?? exercise.difficulty}</Badge>
-                    </div>
-                    <Link
-                      className="mt-3 inline-block text-sm text-primary"
-                      href={`/learn/${day.dayNumber}/exercise/${exercise.id}`}
-                    >
-                      شروع تمرین
-                    </Link>
-                  </li>
+                  <ExerciseItem
+                    key={exercise.id}
+                    index={exerciseIndex + 1}
+                    titleFa={exercise.titleFa}
+                    difficulty={exercise.difficulty}
+                    href={`/learn/${day.dayNumber}/exercise/${exercise.id}`}
+                    status={statusByExercise.get(exercise.id) ?? null}
+                  />
                 ))}
               </ol>
             </Card>
@@ -116,15 +146,18 @@ export function LessonSteps({
       {leftover.length > 0 ? (
         <Card>
           <CardTitle>تمرین‌های دیگر</CardTitle>
-          <ul className="mt-3 space-y-2 text-sm">
-            {leftover.map((exercise) => (
-              <li key={exercise.id}>
-                <Link className="text-primary" href={`/learn/${day.dayNumber}/exercise/${exercise.id}`}>
-                  {exercise.titleFa}
-                </Link>
-              </li>
+          <ol className="mt-3 space-y-3">
+            {leftover.map((exercise, index) => (
+              <ExerciseItem
+                key={exercise.id}
+                index={index + 1}
+                titleFa={exercise.titleFa}
+                difficulty={exercise.difficulty}
+                href={`/learn/${day.dayNumber}/exercise/${exercise.id}`}
+                status={statusByExercise.get(exercise.id) ?? null}
+              />
             ))}
-          </ul>
+          </ol>
         </Card>
       ) : null}
 
@@ -149,5 +182,48 @@ export function LessonSteps({
         </Card>
       </div>
     </div>
+  );
+}
+
+function ExerciseItem({
+  index,
+  titleFa,
+  difficulty,
+  href,
+  status,
+}: {
+  index: number;
+  titleFa: string;
+  difficulty: string;
+  href: string;
+  status: ExerciseStatus;
+}) {
+  const done = isDone(status);
+  const failed = status === "FAILED";
+  return (
+    <li
+      className={cn(
+        "rounded-xl border p-4",
+        done && "border-success/40 bg-success/10",
+        failed && "border-danger/30 bg-danger/5",
+        !done && !failed && "bg-card",
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={cn("font-medium", done && "text-success")}>
+          {done ? "✓ " : null}
+          {index}. {titleFa}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {done ? <Badge tone="success">{status === "EXCELLENT" ? "عالی" : "انجام شد"}</Badge> : null}
+          {failed ? <Badge tone="danger">نیاز به تلاش دوباره</Badge> : null}
+          {status === "IN_PROGRESS" ? <Badge tone="accent">شروع شده</Badge> : null}
+          <Badge tone="muted">{difficultyFa[difficulty] ?? difficulty}</Badge>
+        </div>
+      </div>
+      <Link className={cn("mt-3 inline-block text-sm", done ? "text-success" : "text-primary")} href={href}>
+        {done ? "مشاهده مجدد" : failed ? "تلاش دوباره" : "شروع تمرین"}
+      </Link>
+    </li>
   );
 }
