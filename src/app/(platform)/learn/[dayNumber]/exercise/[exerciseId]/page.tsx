@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/server/auth/guards";
 import { prisma } from "@/server/db/prisma";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,9 @@ export default async function ExercisePage({
   const exercise = await prisma.exercise.findUnique({ where: { id: exerciseId } });
   if (!exercise) {
     notFound();
+  }
+  if (!exercise.dailyLessonId) {
+    redirect(`/reviews/exercise/${exercise.id}`);
   }
   const hints = (exercise.hintsJson as Hint[]) ?? [];
   const lesson = exercise.lessonSlug

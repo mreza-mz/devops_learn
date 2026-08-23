@@ -1,20 +1,12 @@
-# پلتفرم یادگیری محلی DevOps / SRE
+# DevOps Learn
 
-برنامهٔ شخصی برای آموزش DevOps تا SRE با درس روزانه، تمرین عملی، سناریوی تولید، آزمون، نمره، یادگیری تطبیقی و ترمینال لینوکس داخل Docker ایزوله.
+Local **DevOps → SRE** training: daily Linux lessons, Docker labs in the browser, production scenarios, exams, scoring, and weak-topic review.
 
-رابط کاربری فارسی و راست‌به‌چپ است. شناسه‌های فنی، API و دیتابیس انگلیسی هستند.
+Persian RTL UI. English APIs, IDs, and database.
 
-## نیازمندی‌ها
+Works offline without an AI key. Labs need [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-- Windows 10/11
-- Node.js 20.9+ (LTS)
-- npm
-- Docker Desktop (برای آزمایشگاه‌ها و ترمینال مرورگر)
-- اختیاری: کلید [AvalAI](https://avalai.ir) برای تولید و نمرهٔ کیفی AI
-
-بدون کلید AI، درس‌ها، تمرین‌ها، آزمون‌ها و پیشرفت آفلاین کار می‌کنند. ترمینال فقط به Docker Desktop نیاز دارد نه اینترنت.
-
-## نصب
+## Quick start
 
 ```powershell
 copy .env.example .env
@@ -25,71 +17,34 @@ npm run lab:build
 npm run dev
 ```
 
-سپس مرورگر را روی `http://localhost:3000` باز کنید.
+Open [http://localhost:3000](http://localhost:3000)
 
-حساب‌های محلی پیش‌فرض:
+| Account | Username | Password |
+| --- | --- | --- |
+| Admin | `admin` | `admin123` |
+| Learner | `learner` | `learner123` |
 
-- ادمین: `admin` / `admin123`
-- یادگیر: `learner` / `learner123`
+Change these after first login.
 
-رمزها را بعد از اولین ورود عوض کنید (فعلاً از طریق seed دوباره با متغیر محیطی).
+## Stack
 
-## متغیرهای محیطی
+Next.js · Prisma/SQLite · Docker sandbox · xterm.js · optional [AvalAI](https://avalai.ir)
 
-جدول کامل در `.env.example` است. مهم‌ترین‌ها:
+## Scripts
 
-- `DATABASE_URL` — SQLite، پیش‌فرض `file:./dev.db`
-- `AUTH_SECRET` — امضای نشست و توکن ترمینال
-- `AVALAI_API_KEY` / `AVALAI_BASE_URL` / `AVALAI_MODEL`
-- `LAB_CPU_LIMIT` / `LAB_MEMORY_LIMIT` / `LAB_TIMEOUT_SECONDS` / `LAB_MAX_PROCESSES`
-- `NEXT_PUBLIC_TERMINAL_GATEWAY_URL` — پیش‌فرض `ws://127.0.0.1:3001`
-
-کلید API هرگز به مرورگر فرستاده نمی‌شود.
-
-## اسکریپت‌ها
-
-| فرمان | کار |
+| Command | What it does |
 | --- | --- |
-| `npm run dev` | Next.js + درگاه ترمینال PTY |
-| `npm run build` | بیلد تولید |
-| `npm run start` | اجرای بیلد + درگاه ترمینال |
-| `npm run lint` | ESLint |
+| `npm run dev` | App + terminal gateway |
 | `npm run test` | Vitest |
-| `npm run db:migrate` | مهاجرت Prisma |
-| `npm run db:seed` | محتوای اولیه شامل ۷ روز کامل |
-| `npm run lab:build` | ساخت ایمیج آزمایشگاه |
+| `npm run db:seed` | Seed 7-day curriculum |
+| `npm run lab:build` | Build `devops-learn-lab:latest` |
 
-## Docker Compose (اختیاری)
+Optional: `docker compose up --build`
 
-```powershell
-docker compose up --build
-```
+Student containers never see the Docker socket. The API key never goes to the browser.
 
-سوکت Docker فقط به سرویس `app` وصل می‌شود تا کانتینرهای لب ساخته شوند. کانتینر دانشجو هرگز `/var/run/docker.sock` را نمی‌بیند و فرمان‌ها روی ویندوز میزبان اجرا نمی‌شوند.
+## Troubleshooting
 
-## مسیر یادگیری روز ۱
-
-1. ورود با `learner`
-2. داشبورد
-3. درس امروز
-4. خواندن نظریه و ثبت آن
-5. شروع تمرین عملی و ترمینال
-6. اعتبارسنجی
-7. سناریوی «سرور کند است»
-8. آزمون ۱۰ سؤالی
-9. مشاهده نمره، موضوعات ضعیف و صف مرور
-10. رفتن به روز ۲ پس از قبولی
-
-## عیب‌یابی
-
-**ترمینال وصل نمی‌شود**
-Docker Desktop را روشن کنید، `npm run lab:build` را اجرا کنید، و پورت `3001` را آزاد بگذارید.
-
-**خطای محیط آزمایشگاه**
-ایمیج `devops-learn-lab:latest` باید موجود باشد. WSL2 backend در Docker Desktop توصیه می‌شود.
-
-**مهاجرت دیتابیس**
-فایل SQLite در `prisma/dev.db` است. اگر خراب شد حذفش کنید و دوباره `migrate` و `seed` بزنید.
-
-**AvalAI**
-اگر کلید خالی باشد برنامه از نمره‌دهی قطعی و محتوای seed استفاده می‌کند.
+- **Terminal won't connect** — start Docker Desktop, run `npm run lab:build`, keep port `3001` free.
+- **Corrupt DB** — delete `prisma/dev.db`, then migrate and seed again.
+- **No AvalAI key** — deterministic grading and seeded content still work.

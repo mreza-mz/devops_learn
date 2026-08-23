@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectWeakTopics, isWeakTopic, updateTopicAverage } from "@/services/progress/weakness-engine";
+import { uniqueOpenReviews } from "@/services/progress/review-queue";
 import { canUnlockLevel, nextStreak } from "@/services/progress/level-engine";
 
 describe("weakness engine", () => {
@@ -19,6 +20,30 @@ describe("weakness engine", () => {
       0.6,
     );
     expect(weak.map((item) => item.topicId)).toEqual(["dns"]);
+  });
+});
+
+describe("review queue", () => {
+  it("keeps one open item per topic", () => {
+    const dnsOld = {
+      topicId: "dns",
+      generatedExerciseId: null,
+      scheduledFor: new Date("2026-08-20"),
+    };
+    const dnsNew = {
+      topicId: "dns",
+      generatedExerciseId: "ex-1",
+      scheduledFor: new Date("2026-08-21"),
+    };
+    const linux = {
+      topicId: "linux",
+      generatedExerciseId: null,
+      scheduledFor: new Date("2026-08-19"),
+    };
+    const unique = uniqueOpenReviews([dnsOld, linux, dnsNew, { ...dnsOld }]);
+    expect(unique).toHaveLength(2);
+    expect(unique.map((item) => item.topicId)).toEqual(["linux", "dns"]);
+    expect(unique.find((item) => item.topicId === "dns")?.generatedExerciseId).toBe("ex-1");
   });
 });
 

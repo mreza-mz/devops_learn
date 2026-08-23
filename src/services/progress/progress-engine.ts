@@ -2,6 +2,7 @@ import { prisma } from "@/server/db/prisma";
 import { ATTEMPT_STATUS } from "@/config/constants";
 import { classifyScore, computeDailyTotal, scaleToWeight, xpForDailyResult } from "@/services/scoring/scoring-engine";
 import { detectWeakTopics, updateTopicAverage } from "@/services/progress/weakness-engine";
+import { uniqueOpenReviews } from "@/services/progress/review-queue";
 import { canUnlockLevel, nextStreak } from "@/services/progress/level-engine";
 import { aiService } from "@/server/ai/service";
 import type { LevelRequirements } from "@/types/domain";
@@ -114,13 +115,24 @@ export const progressEngine = {
       create: { userId, topicId, ...next, lastScore: scorePercent / 100, isWeak },
     });
     if (isWeak) {
-      await prisma.reviewQueue.create({
-        data: {
-          userId,
-          topicId,
-          reason: "weak-topic",
-          scheduledFor: new Date(),
-        },
+      const open = await prisma.reviewQueue.findFirst({
+        where: { userId, topicId, completed: false },
+        select: { id: true },
+      });
+      if (!open) {
+        await prisma.reviewQueue.create({
+          data: {
+            userId,
+            topicId,
+            reason: "weak-topic",
+            scheduledFor: new Date(),
+          },
+        });
+      }
+    } else {
+      await prisma.reviewQueue.updateMany({
+        where: { userId, topicId, completed: false },
+        data: { completed: true },
       });
     }
   },
@@ -241,12 +253,12 @@ export const progressEngine = {
       include: { topic: true },
       orderBy: { scoreAvg: "asc" },
     });
-    const reviews = await prisma.reviewQueue.findMany({
+    const reviewRows = await prisma.reviewQueue.findMany({
       where: { userId, completed: false },
       include: { topic: true },
       orderBy: { scheduledFor: "asc" },
-      take: 8,
     });
+    const reviews = uniqueOpenReviews(reviewRows).slice(0, 8);
     const examHistory = await prisma.examAttempt.findMany({
       where: { userId, completedAt: { not: null } },
       include: { exam: { include: { dailyLesson: true } } },

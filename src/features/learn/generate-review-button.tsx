@@ -22,7 +22,7 @@ export function GenerateReviewButton({ topicId }: { topicId: string }) {
               setError(result.error);
               return;
             }
-            router.refresh();
+            router.push(`/reviews/exercise/${result.data.id}`);
           })
         }
       >

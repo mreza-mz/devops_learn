@@ -2,15 +2,17 @@ import { requireUser } from "@/server/auth/guards";
 import { prisma } from "@/server/db/prisma";
 import { Card, CardTitle } from "@/components/ui/card";
 import { GenerateReviewButton } from "@/features/learn/generate-review-button";
+import { uniqueOpenReviews } from "@/services/progress/review-queue";
 import Link from "next/link";
 
 export default async function ReviewsPage() {
   const user = await requireUser();
-  const items = await prisma.reviewQueue.findMany({
+  const rows = await prisma.reviewQueue.findMany({
     where: { userId: user.id, completed: false },
     include: { topic: true, generatedExercise: true },
     orderBy: { scheduledFor: "asc" },
   });
+  const items = uniqueOpenReviews(rows);
 
   return (
     <div className="space-y-6">
@@ -23,7 +25,7 @@ export default async function ReviewsPage() {
             <CardTitle>{item.topic.titleFa}</CardTitle>
             <p className="text-sm text-muted-foreground">{item.reason}</p>
             {item.generatedExercise ? (
-              <Link className="text-sm text-primary" href={`/learn/1/exercise/${item.generatedExercise.id}`}>
+              <Link className="text-sm text-primary" href={`/reviews/exercise/${item.generatedExercise.id}`}>
                 {item.generatedExercise.titleFa}
               </Link>
             ) : null}
