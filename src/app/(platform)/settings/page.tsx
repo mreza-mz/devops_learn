@@ -2,6 +2,7 @@ import { requireUser } from "@/server/auth/guards";
 import { prisma } from "@/server/db/prisma";
 import { Card, CardTitle } from "@/components/ui/card";
 import { isAiConfigured } from "@/config/env";
+import { DbBackupPanel } from "@/features/settings/db-backup-panel";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -16,6 +17,12 @@ export default async function SettingsPage() {
         <p className="mt-2 text-sm">نام کاربری: {user.username}</p>
         <p className="text-sm">نقش: {user.role === "ADMIN" ? "ادمین" : "یادگیر"}</p>
         <p className="text-sm">روز جاری: {profile?.currentDayNumber}</p>
+      </Card>
+      <Card>
+        <CardTitle>پشتیبان دیتابیس</CardTitle>
+        <div className="mt-3">
+          <DbBackupPanel />
+        </div>
       </Card>
       <Card>
         <CardTitle>آستانه‌های یادگیری</CardTitle>

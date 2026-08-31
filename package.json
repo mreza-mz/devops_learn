@@ -18,6 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed/index.ts",
+    "db:export": "tsx --env-file=.env scripts/db-backup.ts export",
+    "db:import": "tsx --env-file=.env scripts/db-backup.ts import",
     "lab:build": "docker build -t devops-learn-lab:latest ./lab-image"
   },
   "prisma": {
