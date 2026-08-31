@@ -5,7 +5,7 @@ import type { SessionUser } from "@/types/domain";
 
 const links = [
   { href: "/dashboard", label: "داشبورد" },
-  { href: "/learn", label: "درس امروز" },
+  { href: "/learn", label: "درس‌ها" },
   { href: "/progress", label: "پیشرفت" },
   { href: "/projects", label: "پروژه‌ها" },
   { href: "/reviews", label: "مرور" },

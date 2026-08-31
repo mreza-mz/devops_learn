@@ -69,7 +69,7 @@ export default async function DashboardPage() {
             <p>سناریوی موفق: {data.completedScenarios}</p>
             <p>نرخ موفقیت عملی: {practicalRate}%</p>
           </div>
-          <Link href="/learn" className="mt-4 inline-block text-primary">
+          <Link href={`/learn/${data.profile.currentDayNumber}`} className="mt-4 inline-block text-primary">
             ادامه درس امروز
           </Link>
         </Card>

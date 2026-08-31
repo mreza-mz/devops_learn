@@ -27,6 +27,78 @@ export const learningService = {
     return daily;
   },
 
+  async listDaysWithProgress(userId: string) {
+    const profile = await prisma.profile.findUniqueOrThrow({ where: { userId } });
+    const days = await prisma.dailyLesson.findMany({
+      orderBy: { dayNumber: "asc" },
+      include: { phase: true },
+    });
+    const progressRows = await prisma.progress.findMany({ where: { userId } });
+    const byLessonId = new Map(progressRows.map((row) => [row.dailyLessonId, row]));
+
+    const mapped = days.map((day) => {
+      const progress = byLessonId.get(day.id) ?? null;
+      const unlocked = day.dayNumber <= profile.currentDayNumber;
+      return {
+        id: day.id,
+        dayNumber: day.dayNumber,
+        titleFa: day.titleFa,
+        objectiveFa: day.objectiveFa,
+        phaseId: day.phase.id,
+        phaseSlug: day.phase.slug,
+        phaseTitleFa: day.phase.titleFa,
+        phaseTitleEn: day.phase.titleEn,
+        phaseOrder: day.phase.order,
+        unlocked,
+        isCurrent: day.dayNumber === profile.currentDayNumber,
+        status: progress?.status ?? null,
+        totalScore: progress?.totalScore ?? 0,
+        bestScore: progress?.bestScore ?? 0,
+        latestScore: progress?.latestScore ?? 0,
+        theoryScore: progress?.theoryScore ?? 0,
+        practicalScore: progress?.practicalScore ?? 0,
+        scenarioScore: progress?.scenarioScore ?? 0,
+        examScore: progress?.examScore ?? 0,
+      };
+    });
+
+    const phaseMap = new Map<
+      string,
+      {
+        id: string;
+        slug: string;
+        titleFa: string;
+        titleEn: string;
+        order: number;
+        days: typeof mapped;
+      }
+    >();
+
+    for (const day of mapped) {
+      const existing = phaseMap.get(day.phaseId);
+      if (existing) {
+        existing.days.push(day);
+        continue;
+      }
+      phaseMap.set(day.phaseId, {
+        id: day.phaseId,
+        slug: day.phaseSlug,
+        titleFa: day.phaseTitleFa,
+        titleEn: day.phaseTitleEn,
+        order: day.phaseOrder,
+        days: [day],
+      });
+    }
+
+    const phases = [...phaseMap.values()].sort((a, b) => a.order - b.order);
+
+    return {
+      currentDayNumber: profile.currentDayNumber,
+      days: mapped,
+      phases,
+    };
+  },
+
   async completeTheory(userId: string, dayNumber: number) {
     const daily = await this.getDay(dayNumber);
     await progressEngine.markTheoryComplete(userId, daily.id, daily.theoryWeight);
