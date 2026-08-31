@@ -3,8 +3,19 @@ import { hashPassword } from "../../src/server/auth/password";
 import { phases, levels } from "./curriculum";
 import { days as day1 } from "./day1";
 import { extraDays } from "./days-rest";
+import { gitDockerDays } from "./days-git-docker";
+import { cicdDays } from "./days-cicd";
+import { k8sDays } from "./days-k8s";
+import { iacDays } from "./days-iac";
+import { obsDays } from "./days-obs";
+import { sreDays } from "./days-sre";
+import type { DaySeed } from "./types";
 
 const prisma = new PrismaClient();
+
+function withLinuxPhase<T extends Omit<DaySeed, "phaseSlug">>(day: T): DaySeed {
+  return { ...day, phaseSlug: "linux-networking" };
+}
 
 async function main() {
   const adminPassword = await hashPassword(process.env.AUTH_PASSWORD_ADMIN ?? "admin123");
@@ -144,21 +155,32 @@ async function main() {
     throw new Error("linux phase missing");
   }
 
-  const allDays = [...day1, ...extraDays];
+  const allDays: DaySeed[] = [
+    ...day1.map(withLinuxPhase),
+    ...extraDays.map(withLinuxPhase),
+    ...gitDockerDays,
+    ...cicdDays,
+    ...k8sDays,
+    ...iacDays,
+    ...obsDays,
+    ...sreDays,
+  ];
+
   for (const day of allDays) {
+    const phaseId = phaseBySlug.get(day.phaseSlug) ?? linuxPhaseId;
     const daily = await prisma.dailyLesson.upsert({
       where: { dayNumber: day.dayNumber },
       update: {
         titleFa: day.titleFa,
         objectiveFa: day.objectiveFa,
-        phaseId: linuxPhaseId,
+        phaseId,
         status: "APPROVED",
       },
       create: {
         dayNumber: day.dayNumber,
         titleFa: day.titleFa,
         objectiveFa: day.objectiveFa,
-        phaseId: linuxPhaseId,
+        phaseId,
         status: "APPROVED",
       },
     });

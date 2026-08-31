@@ -288,6 +288,7 @@ export const progressEngine = {
     const completedScenarios = await prisma.scenarioAttempt.count({
       where: { userId, status: { in: ["PASSED", "EXCELLENT"] } },
     });
+    const totalDays = await prisma.dailyLesson.count();
     return {
       profile,
       daily,
@@ -303,7 +304,7 @@ export const progressEngine = {
       completedLessons,
       completedExercises,
       completedScenarios,
-      overallProgress: Math.round((completedLessons / Math.max(progressRows.length, 7)) * 100),
+      overallProgress: Math.round((completedLessons / Math.max(totalDays, 1)) * 100),
     };
   },
 };
