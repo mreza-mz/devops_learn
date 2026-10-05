@@ -76,7 +76,7 @@ git log --oneline --graph --decorate
         lessonSlug: "git-three-areas",
         path: "/tmp/day8-areas.txt",
         mustContain: "staging",
-        instructionsMd: "در `/tmp/day8-areas.txt` توضیح دهید فایل چگونه از working tree به staging و سپس commit می‌رسد؛ واژهٔ `staging` باید در متن باشد.",
+        instructionsMd: "سؤال مصاحبه: یک فایل چگونه از working tree به staging area و سپس به یک commit می‌رسد؟ نقش هر ناحیه را توضیح دهید و پاسخ کوتاه خود را در آزمایشگاه ثبت کنید.",
       }),
       noteExercise({
         titleFa: "تفاوت دو diff",
@@ -84,7 +84,7 @@ git log --oneline --graph --decorate
         lessonSlug: "git-inspection-branches",
         path: "/tmp/day8-diff.txt",
         mustContain: "--staged",
-        instructionsMd: "در `/tmp/day8-diff.txt` تفاوت `git diff` و `git diff --staged` را با ذکر `--staged` بنویسید.",
+        instructionsMd: "سؤال مصاحبه: تفاوت `git diff` و `git diff --staged` چیست و هرکدام چه چیزی را نشان می‌دهد؟ پاسخ کوتاه خود را در آزمایشگاه ثبت کنید.",
       }),
     ],
     scenario: noteScenario({
@@ -171,8 +171,8 @@ git commit
       },
     ],
     exercises: [
-      noteExercise({ titleFa: "انتخاب merge یا rebase", topicSlug: "git-branching", lessonSlug: "merge-vs-rebase", path: "/tmp/day9-strategy.txt", mustContain: "rebase", instructionsMd: "در `/tmp/day9-strategy.txt` برای branch عمومی و خصوصی راهبرد خود را بنویسید و واژهٔ `rebase` را ذکر کنید." }),
-      noteExercise({ titleFa: "چک‌لیست حل conflict", topicSlug: "git-branching", lessonSlug: "conflict-resolution", path: "/tmp/day9-conflict.txt", mustContain: "--abort", instructionsMd: "چک‌لیست حل و لغو conflict را در `/tmp/day9-conflict.txt` بنویسید و `--abort` را بیاورید." }),
+      noteExercise({ titleFa: "انتخاب merge یا rebase", topicSlug: "git-branching", lessonSlug: "merge-vs-rebase", path: "/tmp/day9-strategy.txt", mustContain: "rebase", instructionsMd: "سؤال مصاحبه: برای branch عمومی و branch خصوصی چه زمانی merge یا rebase را انتخاب می‌کنید و ریسک هر انتخاب چیست؟ پاسخ خود را در آزمایشگاه ثبت کنید." }),
+      noteExercise({ titleFa: "چک‌لیست حل conflict", topicSlug: "git-branching", lessonSlug: "conflict-resolution", path: "/tmp/day9-conflict.txt", mustContain: "--abort", instructionsMd: "هدف این است که یک چک‌لیست امن برای تشخیص، حل، اعتبارسنجی و در صورت نیاز لغو conflict ارائه دهید. پاسخ را در آزمایشگاه ثبت کنید." }),
     ],
     scenario: noteScenario({ titleFa: "بازنویسی branch مشترک", path: "/tmp/day9-scenario.txt", mustContain: "force-with-lease", incidentMd: "یک توسعه‌دهنده branch مشترک را rebase کرده و قصد force-push دارد.", symptomsMd: "همکاران commitهای محلی دارند و remote نیز از آخرین fetch جلوتر رفته است.", rootCause: "تاریخچهٔ عمومی بدون هماهنگی بازنویسی شده و push اجباری ممکن است کار دیگران را حذف کند.", difficulty: "hard" }),
     exam: {
@@ -249,8 +249,8 @@ test:
       },
     ],
     exercises: [
-      noteExercise({ titleFa: "انتخاب workflow", topicSlug: "git-workflows", lessonSlug: "team-workflows-pr", path: "/tmp/day10-workflow.txt", mustContain: "trunk-based", instructionsMd: "برای یک SaaS با انتشار روزانه در `/tmp/day10-workflow.txt` workflow مناسب را توجیه و `trunk-based` را ذکر کنید." }),
-      noteExercise({ titleFa: "Artifact در برابر cache", topicSlug: "gitlab", lessonSlug: "gitlab-ci-concepts", path: "/tmp/day10-ci.txt", mustContain: "artifact", instructionsMd: "در `/tmp/day10-ci.txt` تفاوت artifact و cache را توضیح دهید؛ متن باید شامل `artifact` باشد." }),
+      noteExercise({ titleFa: "انتخاب workflow", topicSlug: "git-workflows", lessonSlug: "team-workflows-pr", path: "/tmp/day10-workflow.txt", mustContain: "trunk-based", instructionsMd: "سؤال مصاحبه: برای یک SaaS با انتشار روزانه چه workflowای مناسب‌تر است و این انتخاب چه مزایا و محدودیت‌هایی دارد؟ پاسخ را در آزمایشگاه ثبت کنید." }),
+      noteExercise({ titleFa: "Artifact در برابر cache", topicSlug: "gitlab", lessonSlug: "gitlab-ci-concepts", path: "/tmp/day10-ci.txt", mustContain: "artifact", instructionsMd: "سؤال مصاحبه: artifact و cache در CI چه تفاوتی در هدف، ماندگاری و انتقال خروجی میان jobها دارند؟ پاسخ را در آزمایشگاه ثبت کنید." }),
     ],
     scenario: noteScenario({ titleFa: "نشت secret در pipeline", path: "/tmp/day10-scenario.txt", mustContain: "protected", incidentMd: "توکن deploy داخل `.gitlab-ci.yml` قرار گرفته و در log یک job چاپ شده است.", symptomsMd: "توکن در تاریخچهٔ Git و خروجی pipeline قابل مشاهده است.", rootCause: "secret به‌جای masked/protected variable در repository ذخیره شده است.", difficulty: "hard" }),
     exam: {
@@ -325,8 +325,8 @@ docker rm -f web
       },
     ],
     exercises: [
-      noteExercise({ titleFa: "Container در برابر VM", topicSlug: "docker-architecture", lessonSlug: "docker-engine-architecture", path: "/tmp/day11-architecture.txt", mustContain: "kernel", instructionsMd: "در `/tmp/day11-architecture.txt` تفاوت container و VM را توضیح دهید و `kernel` را ذکر کنید." }),
-      noteExercise({ titleFa: "چک‌لیست container متوقف‌شده", topicSlug: "containers", lessonSlug: "images-containers-runtime", path: "/tmp/day11-runtime.txt", mustContain: "logs", instructionsMd: "در `/tmp/day11-runtime.txt` مراحل بررسی container متوقف‌شده را بنویسید و `logs` را بیاورید." }),
+      noteExercise({ titleFa: "Container در برابر VM", topicSlug: "docker-architecture", lessonSlug: "docker-engine-architecture", path: "/tmp/day11-architecture.txt", mustContain: "kernel", instructionsMd: "سؤال مصاحبه: container و ماشین مجازی از نظر جداسازی، مصرف منابع و اشتراک kernel چه تفاوتی دارند؟ پاسخ را در آزمایشگاه ثبت کنید." }),
+      noteExercise({ titleFa: "چک‌لیست container متوقف‌شده", topicSlug: "containers", lessonSlug: "images-containers-runtime", path: "/tmp/day11-runtime.txt", mustContain: "logs", instructionsMd: "هدف این است که یک چک‌لیست شواهد‌محور برای عیب‌یابی container متوقف‌شده، از وضعیت اجرا تا علت خروج، ارائه دهید. پاسخ را در آزمایشگاه ثبت کنید." }),
     ],
     scenario: noteScenario({ titleFa: "Container بلافاصله خارج می‌شود", path: "/tmp/day11-scenario.txt", mustContain: "PID 1", incidentMd: "container پس از `docker run -d` بلافاصله Exited می‌شود.", symptomsMd: "`docker ps` چیزی نشان نمی‌دهد اما `docker ps -a` exit code صفر ثبت کرده است.", rootCause: "فرمان اصلی container تمام شده و با پایان PID 1 عمر container نیز پایان یافته است." }),
     exam: {
@@ -408,8 +408,8 @@ ENTRYPOINT ["/app"]
       },
     ],
     exercises: [
-      noteExercise({ titleFa: "راهبرد cache", topicSlug: "dockerfile", lessonSlug: "dockerfile-layers-cache", path: "/tmp/day12-cache.txt", mustContain: "package-lock.json", instructionsMd: "در `/tmp/day12-cache.txt` ترتیب COPY مناسب Node را با ذکر `package-lock.json` توضیح دهید." }),
-      noteExercise({ titleFa: "مزیت multi-stage", topicSlug: "multistage", lessonSlug: "multistage-production", path: "/tmp/day12-multistage.txt", mustContain: "builder", instructionsMd: "در `/tmp/day12-multistage.txt` توضیح دهید چرا stage `builder` نباید image نهایی باشد." }),
+      noteExercise({ titleFa: "راهبرد cache", topicSlug: "dockerfile", lessonSlug: "dockerfile-layers-cache", path: "/tmp/day12-cache.txt", mustContain: "package-lock.json", instructionsMd: "سؤال مصاحبه: در Dockerfile یک پروژهٔ Node، ترتیب کپی فایل‌های dependency و source چگونه بر cache لایه‌ها اثر می‌گذارد؟ پاسخ را در آزمایشگاه ثبت کنید." }),
+      noteExercise({ titleFa: "مزیت multi-stage", topicSlug: "multistage", lessonSlug: "multistage-production", path: "/tmp/day12-multistage.txt", mustContain: "builder", instructionsMd: "سؤال مصاحبه: چرا stage ساخت نباید همان image نهایی production باشد و multi-stage build چه مزایایی ایجاد می‌کند؟ پاسخ را در آزمایشگاه ثبت کنید." }),
     ],
     scenario: noteScenario({ titleFa: "Image بزرگ و دارای secret", path: "/tmp/day12-scenario.txt", mustContain: ".dockerignore", incidentMd: "image تولید ۱.۸ گیگابایت است و فایل `.env` در build context قرار دارد.", symptomsMd: "`docker history` لایه‌های dependency حجیم دارد و source کامل به image کپی شده است.", rootCause: "ترتیب Dockerfile، نبود multi-stage و نبود `.dockerignore` باعث image حجیم و نشت داده شده است.", difficulty: "hard" }),
     exam: {
@@ -492,8 +492,8 @@ networks:
       },
     ],
     exercises: [
-      noteExercise({ titleFa: "Localhost در container", topicSlug: "docker-networking", lessonSlug: "networks-volumes", path: "/tmp/day13-network.txt", mustContain: "db:5432", instructionsMd: "در `/tmp/day13-network.txt` توضیح دهید چرا web باید به `db:5432` وصل شود و نه localhost." }),
-      noteExercise({ titleFa: "Volume در برابر bind mount", topicSlug: "volumes", lessonSlug: "networks-volumes", path: "/tmp/day13-storage.txt", mustContain: "backup", instructionsMd: "در `/tmp/day13-storage.txt` تفاوت named volume و bind mount و نیاز به `backup` را بنویسید." }),
+      noteExercise({ titleFa: "Localhost در container", topicSlug: "docker-networking", lessonSlug: "networks-volumes", path: "/tmp/day13-network.txt", mustContain: "db:5432", instructionsMd: "سؤال مصاحبه: چرا یک سرویس داخل Compose نباید برای اتصال به سرویس دیگر از localhost استفاده کند و service discovery چگونه این مسئله را حل می‌کند؟ پاسخ را در آزمایشگاه ثبت کنید." }),
+      noteExercise({ titleFa: "Volume در برابر bind mount", topicSlug: "volumes", lessonSlug: "networks-volumes", path: "/tmp/day13-storage.txt", mustContain: "backup", instructionsMd: "سؤال مصاحبه: named volume و bind mount از نظر مدیریت، portability و کاربرد چه تفاوتی دارند و چرا هیچ‌کدام جای راهبرد پشتیبان‌گیری را نمی‌گیرد؟ پاسخ را در آزمایشگاه ثبت کنید." }),
     ],
     scenario: noteScenario({ titleFa: "وب به دیتابیس وصل نمی‌شود", path: "/tmp/day13-scenario.txt", mustContain: "service name", incidentMd: "سرویس web در Compose تلاش می‌کند به `localhost:5432` وصل شود.", symptomsMd: "connection refused دیده می‌شود؛ database سالم و روی network پروژه فعال است.", rootCause: "localhost داخل web container به خودش اشاره دارد و باید از service name دیتابیس استفاده شود." }),
     exam: {
@@ -566,8 +566,8 @@ docker stats --no-stream
       },
     ],
     exercises: [
-      noteExercise({ titleFa: "سیاست promotion امن", topicSlug: "registries", lessonSlug: "registry-supply-chain", path: "/tmp/day14-registry.txt", mustContain: "digest", instructionsMd: "در `/tmp/day14-registry.txt` توضیح دهید چرا promotion بر اساس `digest` از rebuild یا latest قابل اتکاتر است.", difficulty: "hard" }),
-      noteExercise({ titleFa: "چک‌لیست hardening", topicSlug: "container-security", lessonSlug: "hardening-limits-optimization", path: "/tmp/day14-hardening.txt", mustContain: "cap-drop", instructionsMd: "در `/tmp/day14-hardening.txt` یک چک‌لیست امنیت و منابع بنویسید و `cap-drop` را ذکر کنید.", difficulty: "hard" }),
+      noteExercise({ titleFa: "سیاست promotion امن", topicSlug: "registries", lessonSlug: "registry-supply-chain", path: "/tmp/day14-registry.txt", mustContain: "digest", instructionsMd: "سؤال مصاحبه: چرا promotion همان image آزموده‌شده با شناسهٔ تغییرناپذیر، از rebuild یا tag شناور قابل‌اتکاتر است؟ پاسخ را در آزمایشگاه ثبت کنید.", difficulty: "hard" }),
+      noteExercise({ titleFa: "چک‌لیست hardening", topicSlug: "container-security", lessonSlug: "hardening-limits-optimization", path: "/tmp/day14-hardening.txt", mustContain: "cap-drop", instructionsMd: "هدف این است که یک چک‌لیست دفاع در عمق برای امنیت container و محدودیت منابع ارائه دهید و trade-offهای عملیاتی آن را توضیح دهید. پاسخ را در آزمایشگاه ثبت کنید.", difficulty: "hard" }),
     ],
     scenario: noteScenario({ titleFa: "OOM و image آسیب‌پذیر", path: "/tmp/day14-scenario.txt", mustContain: "OOMKilled", incidentMd: "نسخهٔ جدید گهگاه restart می‌شود و scanner نیز CVE بحرانی در base image گزارش کرده است.", symptomsMd: "inspect مقدار `OOMKilled=true` دارد، memory روی 256MiB محدود است و image با latest منتشر شده است.", rootCause: "memory limit بدون load test تنظیم شده و artifact با tag شناور و base image وصله‌نشده deploy شده است.", difficulty: "hard" }),
     exam: {

@@ -244,16 +244,9 @@ umask
         titleFa: "ساخت گروه ops",
         topicSlug: "users-groups",
         lessonSlug: "groups",
-        instructionsMd: `گروه \`ops\` را بسازید. کاربر \`deploy\` را اگر نیست با شل \`/bin/bash\` ایجاد کنید و با \`-aG\` به گروه \`ops\` اضافه کنید.
+        instructionsMd: `چگونه یک گروه کاری بسازید و کاربر سرویس را بدون از دست رفتن عضویت‌های قبلی به آن اضافه کنید؟
 
-بعد با \`id deploy\` مطمئن شوید \`ops\` در فهرست گروه‌ها هست.
-
-\`\`\`bash
-groupadd ops
-id deploy || useradd -s /bin/bash deploy
-usermod -aG ops deploy
-id deploy
-\`\`\``,
+هدف این است که گروه \`ops\` و کاربر \`deploy\` وجود داشته باشند، شل کاربر \`/bin/bash\` باشد و \`deploy\` در فهرست اعضای \`ops\` دیده شود. اگر کاربر از قبل وجود دارد، همان کاربر را اصلاح کنید و کاربر تکراری نسازید.`,
         difficulty: "medium",
         maxScore: 10,
         validation: {
@@ -263,8 +256,8 @@ id deploy
           ],
         },
         hints: [
-          { level: 1, textFa: "اول groupadd ops؛ بعد کاربر را به گروه اضافه کنید." },
-          { level: 2, textFa: "usermod -aG یعنی اضافه کن؛ بدون -a گروه‌های قبلی پاک می‌شوند." },
+          { level: 1, textFa: "ابتدا هویت‌های لازم را آماده کنید، سپس عضویت گروهی کاربر را تغییر دهید." },
+          { level: 2, textFa: "برای افزودن گروه فرعی، گزینهٔ append را همراه گزینهٔ گروه‌ها به‌کار ببرید؛ حذف آن عضویت‌های قبلی را جایگزین می‌کند." },
           { level: 3, textFa: "groupadd ops; useradd -s /bin/bash deploy; usermod -aG ops deploy" },
         ],
       },
@@ -272,18 +265,15 @@ id deploy
         titleFa: "کاربر ci با شل bash",
         topicSlug: "users-groups",
         lessonSlug: "groups",
-        instructionsMd: `اگر وجود ندارد، کاربر \`ci\` با شل \`/bin/bash\` بسازید. این الگوی کاربر خط لوله است؛ لازم نیست خانهٔ پیچیده بسازید.
+        instructionsMd: `چگونه کاربر خط لوله‌ای بسازید که شل ورود مشخصی داشته باشد؟
 
-\`\`\`bash
-id ci || useradd -s /bin/bash ci
-getent passwd ci
-\`\`\``,
+هدف این است که کاربر \`ci\` وجود داشته باشد و شل ثبت‌شدهٔ آن دقیقاً \`/bin/bash\` باشد. اگر کاربر از قبل وجود دارد، نتیجهٔ نهایی را اصلاح کنید؛ ساخت home سفارشی لازم نیست.`,
         difficulty: "easy",
         maxScore: 10,
         validation: { checks: [{ type: "userExists", name: "ci", shell: "/bin/bash" }] },
         hints: [
-          { level: 1, textFa: "ساخت کاربر با useradd است؛ -s شل را مشخص می‌کند." },
-          { level: 2, textFa: "شل باید دقیقاً /bin/bash باشد." },
+          { level: 1, textFa: "هنگام ایجاد یا اصلاح کاربر، شل ورود بخشی از مشخصات حساب است." },
+          { level: 2, textFa: "گزینهٔ تعیین شل را فراموش نکنید؛ مقدار باید دقیقاً /bin/bash باشد." },
           { level: 3, textFa: "id ci || useradd -s /bin/bash ci" },
         ],
       },
@@ -291,14 +281,9 @@ getent passwd ci
         titleFa: "مجوز محرمانه",
         topicSlug: "permissions",
         lessonSlug: "permissions",
-        instructionsMd: `فایل \`/opt/app/secret.env\` را با محتوای \`TOKEN=local\` بسازید و مجوز \`600\` بدهید (فقط مالک: rw-------).
+        instructionsMd: `چگونه یک راز برنامه را در مسیر درست ایجاد کنید تا فقط مالک بتواند آن را بخواند و تغییر دهد؟
 
-\`\`\`bash
-mkdir -p /opt/app
-echo TOKEN=local > /opt/app/secret.env
-chmod 600 /opt/app/secret.env
-ls -l /opt/app/secret.env
-\`\`\``,
+هدف این است که فایل \`/opt/app/secret.env\` شامل متن دقیق \`TOKEN=local\` باشد و mode آن دقیقاً \`600\` (\`rw-------\`) ثبت شود. در صورت نبودن پوشهٔ والد، آن را نیز ایجاد کنید.`,
         difficulty: "easy",
         maxScore: 10,
         validation: {
@@ -308,8 +293,8 @@ ls -l /opt/app/secret.env
           ],
         },
         hints: [
-          { level: 1, textFa: "mkdir -p /opt/app سپس فایل را با echo بنویسید." },
-          { level: 2, textFa: "chmod 600 یعنی rw------- ؛ فقط مالک." },
+          { level: 1, textFa: "این کار سه بخش دارد: آماده‌کردن مسیر، نوشتن مقدار راز و محدودکردن دسترسی." },
+          { level: 2, textFa: "مسیر مطلق /opt/app را بررسی کنید و mode را روی 600 بگذارید؛ دیگران نباید هیچ دسترسی داشته باشند." },
           { level: 3, textFa: "mkdir -p /opt/app && echo TOKEN=local > /opt/app/secret.env && chmod 600 /opt/app/secret.env" },
         ],
       },
@@ -317,15 +302,9 @@ ls -l /opt/app/secret.env
         titleFa: "مالک و گروه فایل",
         topicSlug: "permissions",
         lessonSlug: "ownership",
-        instructionsMd: `فایل \`/tmp/owned.txt\` را بسازید. مالک را \`deploy\` و گروه را \`ops\` کنید (همان الگوی \`chown کاربر:گروه\`).
+        instructionsMd: `چگونه مالکیت یک فایل را به هویت کاربر و گروه مناسب واگذار کنید؟
 
-اگر کاربر یا گروه را در تمرین‌های قبلی نساخته‌اید، اول آن‌ها را بسازید.
-
-\`\`\`bash
-echo owned > /tmp/owned.txt
-chown deploy:ops /tmp/owned.txt
-ls -l /tmp/owned.txt
-\`\`\``,
+هدف این است که فایل \`/tmp/owned.txt\` وجود داشته باشد، مالک آن \`deploy\` و گروه آن \`ops\` باشد. اگر این کاربر یا گروه هنوز وجود ندارد، ابتدا پیش‌نیازها را فراهم کنید.`,
         difficulty: "medium",
         maxScore: 10,
         validation: {
@@ -335,8 +314,8 @@ ls -l /tmp/owned.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "chown کاربر:گروه فایل — دو بخش با دونقطه از هم جدا می‌شوند." },
-          { level: 2, textFa: "کاربر deploy و گروه ops باید از قبل وجود داشته باشند." },
+          { level: 1, textFa: "مجوز فایل و مالکیت آن دو مفهوم جدا هستند؛ این تمرین دربارهٔ مالکیت است." },
+          { level: 2, textFa: "کاربر deploy و گروه ops باید پیش از تغییر مالکیت وجود داشته باشند؛ قالب مالک و گروه با دونقطه جدا می‌شود." },
           { level: 3, textFa: "echo owned > /tmp/owned.txt && chown deploy:ops /tmp/owned.txt" },
         ],
       },
@@ -345,14 +324,12 @@ ls -l /tmp/owned.txt
       titleFa: "فایل محرمانه برای همه خوانا است",
       incidentMd: `ممیزی امنیت گزارش داده فایل اسرار برنامه بیش از حد باز است.
 
-حدس نزنید. اول \`ls -l\` بزنید؛ مالک، گروه و نه حرف مجوز را بخوانید. بعد کمترین مجوزی را بدهید که راز را از دیگران پنهان کند.`,
+چگونه مجوز فعلی \`/opt/app/open.env\` را بررسی و آن را با اصل کمترین دسترسی اصلاح می‌کنید؟ هدف این است که فقط مالک امکان خواندن و نوشتن داشته باشد و mode نهایی دقیقاً \`600\` باشد.`,
       symptomsMd: "هر کاربر محلی می‌تواند راز را بخواند.",
-      observabilityMd: `اولین فرمان: \`ls -l /opt/app/open.env\`
-
-عدد \`666\` یعنی همه می‌نویسند و می‌خوانند. برای راز معمولاً \`600\` کافی است.`,
+      observabilityMd: "پیش از تغییر، مالک، گروه و نه بیت مجوز فایل را مشاهده کنید. mode اولیه 666 است؛ نتیجهٔ پذیرفته‌شده 600 است.",
       environmentMd: "سرور لینوکس با /opt/app/open.env",
       hiddenRootCause: "File mode 666 on /opt/app/open.env",
-      investigationPath: ["ls -l /opt/app/open.env", "chmod 600"],
+      investigationPath: ["بررسی مجوز فعلی فایل راز", "اعمال کمترین دسترسی و تأیید mode برابر 600"],
       validation: {
         checks: [{ type: "commandOutputContains", command: "stat -c %a /opt/app/open.env", text: "600" }],
       },
@@ -567,12 +544,9 @@ ps aux --sort=-%cpu | head
         titleFa: "ثبت سیگنال‌ها",
         topicSlug: "signals",
         lessonSlug: "signals",
-        instructionsMd: `خروجی \`kill -l\` را در \`/tmp/signals.txt\` ذخیره کنید. داخل فایل باید \`TERM\` دیده شود.
+        instructionsMd: `چگونه فهرست سیگنال‌های سیستم را برای بررسی بعدی در یک فایل ثبت می‌کنید؟
 
-\`\`\`bash
-kill -l > /tmp/signals.txt
-cat /tmp/signals.txt
-\`\`\``,
+هدف این است که فایل \`/tmp/signals.txt\` ایجاد شود و خروجی فهرست سیگنال‌ها را در خود داشته باشد؛ متن \`TERM\` باید داخل فایل دیده شود.`,
         difficulty: "easy",
         maxScore: 15,
         validation: {
@@ -582,8 +556,8 @@ cat /tmp/signals.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "kill -l فهرست سیگنال است." },
-          { level: 2, textFa: "خروجی را با > به /tmp/signals.txt بفرستید." },
+          { level: 1, textFa: "از قابلیت نمایش فهرست سیگنال‌ها استفاده کنید و خروجی آن را ثبت کنید." },
+          { level: 2, textFa: "به‌جای چاپ روی ترمینال، stdout را با عملگر بازنویسی به مسیر دقیق /tmp/signals.txt هدایت کنید." },
           { level: 3, textFa: "kill -l > /tmp/signals.txt" },
         ],
       },
@@ -591,19 +565,16 @@ cat /tmp/signals.txt
         titleFa: "شناسایی فرآیند sleep",
         topicSlug: "processes",
         lessonSlug: "jobs",
-        instructionsMd: `یک \`sleep 300\` در پس‌زمینه اجرا کنید تا در \`ps\` دیده شود.
+        instructionsMd: `چگونه یک فرآیند انتظار را طوری اجرا می‌کنید که ترمینال آزاد بماند؟
 
-\`\`\`bash
-sleep 300 &
-ps aux | grep sleep
-\`\`\``,
+هدف این است که یک فرآیند با نام \`sleep\` و مدت \`300\` ثانیه در پس‌زمینه در حال اجرا باشد و در فهرست فرآیندها دیده شود.`,
         difficulty: "easy",
         maxScore: 15,
         labSetup: { commands: [] },
         validation: { checks: [{ type: "processRunning", name: "sleep" }] },
         hints: [
-          { level: 1, textFa: "با & فرآیند پس‌زمینه می‌شود." },
-          { level: 2, textFa: "sleep 300 &" },
+          { level: 1, textFa: "شل می‌تواند یک کار را بدون اشغال پیش‌زمینه اجرا کند." },
+          { level: 2, textFa: "عملگر & باید پس از فرمان قرار بگیرد؛ مدت انتظار دقیقاً 300 ثانیه است." },
           { level: 3, textFa: "sleep 300 &" },
         ],
       },
@@ -612,12 +583,12 @@ ps aux | grep sleep
       titleFa: "فرآیند زامبی‌نما CPU را قفل کرده",
       incidentMd: `بار CPU بالا مانده و یک فرآیند تست متوقف نشده است.
 
-ترتیب: \`uptime\` یا \`ps\` → فرآیند پرمصرف را پیدا کنید → اول \`kill PID\` (TERM) → اگر نرفت \`kill -9 PID\`.`,
+چگونه فرآیند پرمصرف \`yes\` را پیدا و با کم‌خطرترین سیگنال متوقف می‌کنید؟ ابتدا وضعیت و PID را مشاهده کنید، توقف مؤدبانه را امتحان کنید و فقط اگر فرآیند باقی ماند سراغ توقف اجباری بروید. معیار پذیرش این است که هیچ فرآیند \`yes\` در حال اجرا نباشد.`,
       symptomsMd: "load بالا، پاسخ کند",
-      observabilityMd: "ps, top, pgrep",
+      observabilityMd: "بار سیستم، فهرست فرآیندها و PID فرآیند yes را پیش از ارسال سیگنال بررسی کنید.",
       environmentMd: "sandbox لینوکس",
       hiddenRootCause: "Background yes process",
-      investigationPath: ["ps", "pgrep yes", "kill"],
+      investigationPath: ["مشاهدهٔ بار و فرآیندهای فعال", "یافتن PID مربوط به yes", "ارسال TERM و بررسی نتیجه پیش از KILL"],
       validation: { checks: [{ type: "processNotRunning", name: "yes" }] },
       labSetup: { commands: ["bash -lc 'nohup yes >/dev/null 2>&1 &'"] },
       difficulty: "medium",
@@ -733,12 +704,9 @@ vmstat 1 3
         titleFa: "گزارش دیسک",
         topicSlug: "disk",
         lessonSlug: "disk",
-        instructionsMd: `خروجی \`df -h\` را در \`/tmp/disk.txt\` ذخیره کنید. باید خط عنوان \`Filesystem\` داخل فایل باشد.
+        instructionsMd: `چگونه گزارش خوانای فضای فایل‌سیستم‌ها را برای بررسی بعدی ذخیره می‌کنید؟
 
-\`\`\`bash
-df -h > /tmp/disk.txt
-cat /tmp/disk.txt
-\`\`\``,
+هدف این است که فایل \`/tmp/disk.txt\` ایجاد شود و گزارش فضای دیسک با واحدهای خوانا را در خود داشته باشد؛ خط عنوان \`Filesystem\` باید داخل فایل باشد.`,
         difficulty: "easy",
         maxScore: 15,
         validation: {
@@ -748,8 +716,8 @@ cat /tmp/disk.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "df -h فضای فایل‌سیستم را نشان می‌دهد." },
-          { level: 2, textFa: "با > به /tmp/disk.txt بفرستید." },
+          { level: 1, textFa: "به گزارشی نیاز دارید که وضعیت کل فایل‌سیستم‌ها را با واحد خوانا نشان دهد." },
+          { level: 2, textFa: "گزینهٔ human-readable و هدایت stdout به مسیر دقیق /tmp/disk.txt را فراموش نکنید." },
           { level: 3, textFa: "df -h > /tmp/disk.txt" },
         ],
       },
@@ -757,33 +725,30 @@ cat /tmp/disk.txt
         titleFa: "پاکسازی فایل پرکننده",
         topicSlug: "disk",
         lessonSlug: "disk",
-        instructionsMd: `اگر \`/tmp/fill.dat\` وجود دارد آن را حذف کنید تا فضا آزاد شود. اول \`ls -lh /tmp\` و \`df -h\` را ببینید.
+        instructionsMd: `چگونه عامل مصرف غیرضروری فضای موقت را شناسایی و پاک می‌کنید؟
 
-\`\`\`bash
-ls -lh /tmp
-rm -f /tmp/fill.dat
-\`\`\``,
+پیش از تغییر، محتویات \`/tmp\` و وضعیت فضای فایل‌سیستم را بررسی کنید. هدف این است که فایل \`/tmp/fill.dat\` دیگر وجود نداشته باشد و حذف فایلِ غایب نیز باعث توقف کار نشود.`,
         difficulty: "easy",
         maxScore: 15,
         labSetup: { commands: ["dd if=/dev/zero of=/tmp/fill.dat bs=1M count=20"] },
         validation: { checks: [{ type: "commandExitCode", command: "test ! -f /tmp/fill.dat", expected: 0 }] },
         hints: [
-          { level: 1, textFa: "فایل بزرگ را در /tmp با ls -lh پیدا کنید." },
-          { level: 2, textFa: "rm فایل را حذف می‌کند." },
+          { level: 1, textFa: "ابتدا مصرف فضا و فایل‌های بزرگ مسیر موقت را مشاهده کنید، سپس فقط عامل مشخص‌شده را پاک کنید." },
+          { level: 2, textFa: "مسیر هدف دقیقاً /tmp/fill.dat است؛ گزینهٔ force حذف فایلِ غایب را بی‌خطا می‌کند." },
           { level: 3, textFa: "rm -f /tmp/fill.dat" },
         ],
       },
     ],
     scenario: {
       titleFa: "دیسک در حال پر شدن است",
-      incidentMd: `هشدار فضای /tmp. سرویس نوشتن لاگ شکست می‌خورد.
+      incidentMd: `برای فضای \`/tmp\` هشدار صادر شده و سرویس در نوشتن لاگ شکست می‌خورد.
 
-اول \`df -h\`، بعد \`ls -lh /tmp\`، بعد فایل پرکننده را حذف کنید.`,
+چگونه ابتدا مصرف فایل‌سیستم را تأیید و سپس فایل غیرضروری را پیدا می‌کنید؟ هدف این است که فقط \`/tmp/fill.dat\` حذف شود و در پایان دیگر وجود نداشته باشد.`,
       symptomsMd: "No space left on device در برخی فرمان‌ها ممکن است دیده شود.",
-      observabilityMd: "df -h, du, ls -lh /tmp",
+      observabilityMd: "فضای فایل‌سیستم، مصرف مسیر /tmp و اندازهٔ فایل‌های آن را پیش از پاک‌سازی مقایسه کنید.",
       environmentMd: "فایل پرکننده در /tmp",
       hiddenRootCause: "/tmp/fill.dat consuming space",
-      investigationPath: ["df -h", "ls -lh /tmp", "rm fill.dat"],
+      investigationPath: ["بررسی فضای فایل‌سیستم", "یافتن مصرف‌کننده در /tmp", "حذف فقط fill.dat و تأیید نتیجه"],
       validation: { checks: [{ type: "commandExitCode", command: "test ! -f /tmp/fill.dat", expected: 0 }] },
       labSetup: { commands: ["dd if=/dev/zero of=/tmp/fill.dat bs=1M count=40"] },
       difficulty: "medium",
@@ -907,13 +872,9 @@ echo $HOME
         titleFa: "اسکریپت سلام",
         topicSlug: "shell-scripting",
         lessonSlug: "bash",
-        instructionsMd: `فایل \`/usr/local/bin/hello.sh\` را با shebang bash بسازید که \`hello-sre\` چاپ کند و قابل اجرا باشد (\`chmod +x\`).
+        instructionsMd: `چگونه یک اسکریپت Bash قابل‌اجرا بسازید که خروجی مشخصی تولید کند؟
 
-\`\`\`bash
-printf '%s\\n' '#!/bin/bash' 'echo hello-sre' > /usr/local/bin/hello.sh
-chmod +x /usr/local/bin/hello.sh
-/usr/local/bin/hello.sh
-\`\`\``,
+هدف این است که فایل \`/usr/local/bin/hello.sh\` با shebang دقیق \`#!/bin/bash\` آغاز شود، هنگام اجرا \`hello-sre\` چاپ کند و بیت اجرا برای آن فعال باشد.`,
         difficulty: "medium",
         maxScore: 15,
         validation: {
@@ -923,8 +884,8 @@ chmod +x /usr/local/bin/hello.sh
           ],
         },
         hints: [
-          { level: 1, textFa: "خط اول باید #!/bin/bash باشد." },
-          { level: 2, textFa: "بدون chmod +x اجرا Permission denied می‌دهد." },
+          { level: 1, textFa: "اسکریپت به مفسر مشخص، بدنهٔ چاپ خروجی و اجازهٔ اجرا نیاز دارد." },
+          { level: 2, textFa: "خط اول باید دقیقاً #!/bin/bash باشد و بیت x فایل فعال شود؛ وگرنه اجرای مستقیم خطا می‌دهد." },
           { level: 3, textFa: "printf '%s\\n' '#!/bin/bash' 'echo hello-sre' > /usr/local/bin/hello.sh && chmod +x /usr/local/bin/hello.sh" },
         ],
       },
@@ -932,32 +893,29 @@ chmod +x /usr/local/bin/hello.sh
         titleFa: "ثبت PATH",
         topicSlug: "env-vars",
         lessonSlug: "env",
-        instructionsMd: `خروجی \`echo $PATH\` را در \`/tmp/path.txt\` ذخیره کنید.
+        instructionsMd: `چگونه مقدار متغیر محیطی مسیر جست‌وجوی فرمان‌ها را در یک فایل ثبت می‌کنید؟
 
-\`\`\`bash
-echo $PATH > /tmp/path.txt
-cat /tmp/path.txt
-\`\`\``,
+هدف این است که فایل \`/tmp/path.txt\` ایجاد شود و مقدار فعلی \`PATH\` را در خود داشته باشد.`,
         difficulty: "easy",
         maxScore: 15,
         validation: { checks: [{ type: "fileExists", path: "/tmp/path.txt" }] },
         hints: [
-          { level: 1, textFa: "echo $PATH مسیر جست‌وجوی فرمان را چاپ می‌کند." },
-          { level: 2, textFa: "با > به فایل بفرستید." },
+          { level: 1, textFa: "مقدار متغیر PATH همان فهرست مسیرهای جست‌وجوی فرمان است." },
+          { level: 2, textFa: "هنگام خواندن متغیر علامت $ و هنگام ذخیره هدایت stdout به /tmp/path.txt را فراموش نکنید." },
           { level: 3, textFa: "echo $PATH > /tmp/path.txt" },
         ],
       },
     ],
     scenario: {
       titleFa: "اسکریپت استقرار اجرا نمی‌شود",
-      incidentMd: `اسکریپت /opt/app/deploy.sh مجوز اجرا ندارد.
+      incidentMd: `اسکریپت \`/opt/app/deploy.sh\` با خطای مجوز اجرا روبه‌رو است.
 
-اول \`ls -l /opt/app/deploy.sh\` — اگر \`x\` نبود \`chmod +x\` بزنید. shebang را هم ببینید.`,
+چگونه مجوزها و shebang را بررسی و امکان اجرای مستقیم را برقرار می‌کنید؟ هدف این است که بیت اجرا فعال باشد و اجرای فایل متن \`deploy-ok\` تولید کند.`,
       symptomsMd: "Permission denied هنگام اجرا",
-      observabilityMd: "ls -l /opt/app/deploy.sh",
+      observabilityMd: "پیش از تغییر، بیت‌های مجوز فایل و خط نخست اسکریپت را بررسی کنید.",
       environmentMd: "فایل موجود بدون بیت اجرا",
       hiddenRootCause: "Missing execute bit",
-      investigationPath: ["ls -l", "chmod +x"],
+      investigationPath: ["بررسی مجوز و shebang اسکریپت", "فعال‌کردن بیت اجرا", "اجرای فایل و تأیید deploy-ok"],
       validation: {
         checks: [{ type: "commandOutputContains", command: "/opt/app/deploy.sh", text: "deploy-ok" }],
       },
@@ -1069,18 +1027,15 @@ cat /etc/resolv.conf
         titleFa: "hosts محلی",
         topicSlug: "dns",
         lessonSlug: "dns-http",
-        instructionsMd: `خط \`10.0.0.10 app.internal\` را به \`/etc/hosts\` اضافه کنید.
+        instructionsMd: `چگونه یک نام داخلی را بدون DNS خارجی روی همین میزبان قابل resolve می‌کنید؟
 
-\`\`\`bash
-echo '10.0.0.10 app.internal' >> /etc/hosts
-grep app.internal /etc/hosts
-\`\`\``,
+هدف این است که فایل \`/etc/hosts\` نگاشتی برای نام \`app.internal\` به IP دقیق \`10.0.0.10\` داشته باشد. محتوای فعلی فایل باید حفظ شود.`,
         difficulty: "medium",
         maxScore: 15,
         validation: { checks: [{ type: "fileContains", path: "/etc/hosts", text: "app.internal" }] },
         hints: [
-          { level: 1, textFa: "/etc/hosts نگاشت محلی نام به IP است." },
-          { level: 2, textFa: "با echo و >> به انتهای فایل اضافه کنید." },
+          { level: 1, textFa: "نگاشت محلی نام به IP در فایل hosts این میزبان نگهداری می‌شود." },
+          { level: 2, textFa: "مسیر دقیق /etc/hosts است و باید از append استفاده کنید تا خطوط فعلی بازنویسی نشوند." },
           { level: 3, textFa: "echo '10.0.0.10 app.internal' >> /etc/hosts" },
         ],
       },
@@ -1088,32 +1043,29 @@ grep app.internal /etc/hosts
         titleFa: "گزارش پورت‌ها",
         topicSlug: "ports",
         lessonSlug: "ports",
-        instructionsMd: `خروجی \`ss -lnt\` یا \`netstat -lnt\` را در \`/tmp/listen.txt\` ذخیره کنید.
+        instructionsMd: `چگونه گزارشی از سوکت‌های TCP در حالت listen تهیه و ذخیره می‌کنید؟
 
-\`\`\`bash
-ss -lnt > /tmp/listen.txt || netstat -lnt > /tmp/listen.txt
-cat /tmp/listen.txt
-\`\`\``,
+هدف این است که فایل \`/tmp/listen.txt\` با خروجی ابزار موجود روی سیستم ایجاد شود. گزارش باید آدرس‌ها را عددی نشان دهد؛ اگر ابزار جدید در دسترس نبود، از ابزار قدیمی هم‌ارز استفاده کنید.`,
         difficulty: "easy",
         maxScore: 15,
         validation: { checks: [{ type: "fileExists", path: "/tmp/listen.txt" }] },
         hints: [
-          { level: 1, textFa: "ss -lnt سوکت‌های TCP در listen را نشان می‌دهد." },
-          { level: 2, textFa: "اگر ss نبود از netstat استفاده کنید." },
+          { level: 1, textFa: "ابزار شبکه باید فقط سوکت‌های TCP در حال گوش را با آدرس عددی گزارش کند." },
+          { level: 2, textFa: "ترکیب گزینه‌های listen، numeric و TCP لازم است؛ خروجی هر ابزار موجود باید به /tmp/listen.txt برود." },
           { level: 3, textFa: "ss -lnt > /tmp/listen.txt || netstat -lnt > /tmp/listen.txt" },
         ],
       },
     ],
     scenario: {
       titleFa: "نام داخلی resolve نمی‌شود",
-      incidentMd: `برنامه به db.internal وصل نمی‌شود.
+      incidentMd: `برنامه نمی‌تواند نام \`db.internal\` را resolve کند.
 
-اول \`cat /etc/hosts\`. اگر خطی برای db.internal نیست، IP آزمایشگاهی \`10.0.0.20\` را اضافه کنید.`,
+چگونه نگاشت محلی نام را بررسی و در صورت نبودن اصلاح می‌کنید؟ هدف این است که \`db.internal\` در \`/etc/hosts\` به IP آزمایشگاهی \`10.0.0.20\` نگاشت شود و خطوط موجود فایل حفظ شوند.`,
       symptomsMd: "نام میزبان ناشناخته است.",
-      observabilityMd: "/etc/hosts و ping ممکن است در شبکه none کار نکند؛ hosts را درست کنید.",
+      observabilityMd: "محتوای /etc/hosts را بررسی کنید؛ در شبکهٔ ایزوله، موفق‌نبودن ping معیار مناسبی برای این تمرین نیست.",
       environmentMd: "بدون DNS خارجی",
       hiddenRootCause: "Missing hosts entry for db.internal",
-      investigationPath: ["cat /etc/hosts", "add 10.0.0.20 db.internal"],
+      investigationPath: ["بررسی نگاشت‌های فعلی hosts", "افزودن نگاشت db.internal بدون بازنویسی فایل", "تأیید IP برابر 10.0.0.20"],
       validation: { checks: [{ type: "fileContains", path: "/etc/hosts", text: "db.internal" }] },
       labSetup: { commands: ["true"] },
       difficulty: "medium",
@@ -1232,13 +1184,9 @@ ps aux --sort=-%cpu | head
         titleFa: "ثبت لاگ",
         topicSlug: "logs",
         lessonSlug: "logs",
-        instructionsMd: `پوشهٔ \`/var/log/app\` را بسازید و فایل \`/var/log/app/app.log\` را با خط \`ready\` ایجاد کنید.
+        instructionsMd: `چگونه مسیر لاگ مورد انتظار برنامه را آماده و نخستین وضعیت را ثبت می‌کنید؟
 
-\`\`\`bash
-mkdir -p /var/log/app
-echo ready > /var/log/app/app.log
-cat /var/log/app/app.log
-\`\`\``,
+هدف این است که پوشهٔ \`/var/log/app\` و فایل \`/var/log/app/app.log\` وجود داشته باشند و فایل شامل خط \`ready\` باشد.`,
         difficulty: "easy",
         maxScore: 15,
         validation: {
@@ -1248,8 +1196,8 @@ cat /var/log/app/app.log
           ],
         },
         hints: [
-          { level: 1, textFa: "mkdir -p /var/log/app" },
-          { level: 2, textFa: "echo ready را به فایل بفرستید." },
+          { level: 1, textFa: "برنامه پیش از نوشتن لاگ به پوشهٔ والد و فایل مقصد نیاز دارد." },
+          { level: 2, textFa: "مسیر پوشه دقیقاً /var/log/app و متن مورد انتظار فایل دقیقاً ready است؛ نبودن والدها نباید خطا ایجاد کند." },
           { level: 3, textFa: "mkdir -p /var/log/app && echo ready > /var/log/app/app.log" },
         ],
       },
@@ -1257,32 +1205,29 @@ cat /var/log/app/app.log
         titleFa: "چک‌لیست عیب‌یابی",
         topicSlug: "troubleshooting",
         lessonSlug: "troubleshoot",
-        instructionsMd: `خروجی \`uptime\` را در \`/tmp/health.txt\` ذخیره کنید.
+        instructionsMd: `چگونه وضعیت زمان روشن‌بودن و بار سیستم را برای گزارش سلامت ثبت می‌کنید؟
 
-\`\`\`bash
-uptime > /tmp/health.txt
-cat /tmp/health.txt
-\`\`\``,
+هدف این است که فایل \`/tmp/health.txt\` ایجاد شود و خروجی ابزار نمایش uptime و load را در خود داشته باشد.`,
         difficulty: "easy",
         maxScore: 15,
         validation: { checks: [{ type: "fileExists", path: "/tmp/health.txt" }] },
         hints: [
-          { level: 1, textFa: "uptime بار سیستم را نشان می‌دهد." },
-          { level: 2, textFa: "با > به فایل بفرستید." },
+          { level: 1, textFa: "برای این گزارش به ابزار خلاصهٔ زمان روشن‌بودن و load سیستم نیاز دارید." },
+          { level: 2, textFa: "stdout گزارش را با عملگر بازنویسی به مسیر دقیق /tmp/health.txt هدایت کنید." },
           { level: 3, textFa: "uptime > /tmp/health.txt" },
         ],
       },
     ],
     scenario: {
       titleFa: "سرویس لاگ نمی‌نویسد",
-      incidentMd: `اپلیکیشن باید در /var/log/app/app.log بنویسد ولی مسیر وجود ندارد.
+      incidentMd: `اپلیکیشن باید در \`/var/log/app/app.log\` بنویسد، اما مسیر مورد انتظار وجود ندارد.
 
-اول \`ls /var/log\` ، بعد پوشه و فایل را بسازید.`,
+چگونه ساختار فعلی لاگ‌ها را بررسی و مقصد لازم را آماده می‌کنید؟ هدف این است که پوشهٔ \`/var/log/app\` و فایل \`app.log\` درون آن وجود داشته باشند.`,
       symptomsMd: "خطا در نوشتن لاگ",
-      observabilityMd: "ls /var/log",
+      observabilityMd: "پیش از ایجاد مسیر، محتویات /var/log را مشاهده کنید و فقط ساختار مورد نیاز برنامه را اضافه کنید.",
       environmentMd: "مسیر لاگ ساخته نشده",
       hiddenRootCause: "Missing /var/log/app directory",
-      investigationPath: ["ls /var/log", "mkdir", "touch log"],
+      investigationPath: ["بررسی ساختار فعلی /var/log", "ایجاد پوشهٔ app", "ایجاد app.log و تأیید وجود آن"],
       validation: { checks: [{ type: "fileExists", path: "/var/log/app/app.log" }] },
       labSetup: { commands: ["true"] },
       difficulty: "easy",

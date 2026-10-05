@@ -199,6 +199,26 @@ export const phases = [
       ["opex", "تعالی عملیاتی", "Operational excellence"],
     ],
   },
+  {
+    slug: "platform-tools",
+    titleFa: "ابزارهای پلتفرم DevOps",
+    titleEn: "DevOps Platform Tools",
+    descriptionFa: "درس‌ها و تمرین‌های استخراج‌شده از منابع انگلیسی و فارسی اینترنت برای Kubernetes، Ansible، Argo CD، Redis، RabbitMQ، Kafka، Elasticsearch، Prometheus و Grafana.",
+    order: 8,
+    weekStart: 25,
+    weekEnd: 27,
+    topics: [
+      ["argocd", "Argo CD", "Argo CD"],
+      ["redis", "Redis", "Redis"],
+      ["rabbitmq", "RabbitMQ", "RabbitMQ"],
+      ["kafka", "Kafka", "Kafka"],
+      ["elasticsearch", "Elasticsearch", "Elasticsearch"],
+      ["prometheus-sourced", "Prometheus (منابع وب)", "Prometheus (web sources)"],
+      ["grafana-sourced", "Grafana (منابع وب)", "Grafana (web sources)"],
+      ["k8s-sourced", "Kubernetes (منابع وب)", "Kubernetes (web sources)"],
+      ["ansible-sourced", "Ansible (منابع وب)", "Ansible (web sources)"],
+    ],
+  },
 ] as const;
 
 export const levels = [

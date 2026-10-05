@@ -255,6 +255,9 @@ export function LabTerminal({ mode, labId, token, gatewayUrl, remainingSec, hint
         اگر وضعیت «قطع شد» است، Docker Desktop و npm run dev را بررسی کنید.
       </p>
       <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          گیر کردید؟ راهنمایی‌ها مرحله‌به‌مرحله کمک می‌کنند؛ هر بار زدن دکمه نمرهٔ عملی را کم می‌کند.
+        </p>
         <Button size="sm" variant="ghost" type="button" onClick={revealHint} disabled={hintsUsed >= hints.length}>
           نمایش راهنمایی بعدی (کاهش نمره)
         </Button>

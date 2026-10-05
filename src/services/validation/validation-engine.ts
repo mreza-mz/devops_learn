@@ -60,14 +60,12 @@ export function describeFailedCheck(check: ValidationCheck): string {
   switch (check.type) {
     case "fileExists":
       return check.path.startsWith("/tmp/")
-        ? `فایل \`${check.path}\` وجود ندارد. مسیر باید با / شروع شود (\`/tmp/...\` نه \`tmp/...\`).`
-        : `فایل \`${check.path}\` وجود ندارد. خروجی فرمان را با > در همین مسیر ذخیره کنید.`;
+        ? `فایل \`${check.path}\` هنوز نیست. مسیر مطلق (\`/tmp/...\`) را با مسیر نسبی اشتباه نگیرید.`
+        : `فایل \`${check.path}\` هنوز ساخته یا ذخیره نشده است.`;
     case "directoryExists":
-      return `پوشه \`${check.path}\` وجود ندارد. با mkdir -p بسازید.`;
+      return `پوشهٔ \`${check.path}\` هنوز وجود ندارد.`;
     case "fileContains":
-      return check.path.startsWith("/tmp/")
-        ? `داخل \`${check.path}\` متن «${check.text}» پیدا نشد. با cat \`${check.path}\` چک کنید؛ فایل \`tmp/...\` در پوشهٔ فعلی حساب نمی‌شود.`
-        : `داخل \`${check.path}\` متن «${check.text}» پیدا نشد. فایل را با cat بررسی کنید.`;
+      return `داخل \`${check.path}\` هنوز محتوای مورد انتظار («${check.text}») دیده نمی‌شود.`;
     case "userExists":
       return `کاربر \`${check.name}\`${check.shell ? ` با شل ${check.shell}` : ""} پیدا نشد.`;
     case "processNotRunning":
@@ -81,9 +79,9 @@ export function describeFailedCheck(check: ValidationCheck): string {
     case "packageInstalled":
       return `بستهٔ \`${check.name}\` نصب نشده است.`;
     case "commandExitCode":
-      return `فرمان اعتبارسنجی کد خروج ${check.expected} نداد.`;
+      return `وضعیت خروج فرمان اعتبارسنجی هنوز ${check.expected} نیست.`;
     case "commandOutputContains":
-      return `خروجی فرمان متن «${check.text}» را نداشت.`;
+      return `خروجی مورد انتظار («${check.text}») هنوز دیده نمی‌شود.`;
     case "dockerContainerRunning":
       return `کانتینر \`${check.name}\` در حال اجرا نیست.`;
     case "k8sResourceExists":

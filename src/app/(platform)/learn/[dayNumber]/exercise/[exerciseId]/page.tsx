@@ -44,7 +44,11 @@ export default async function ExercisePage({
           <div className="mt-4">
             <SafeMarkdown content={exercise.instructionsMd} />
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">قوانین اعتبارسنجی مخفی هستند. راهنمایی نمره عملی را کم می‌کند.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            هدف را در ترمینال آزمایشگاه خودتان پیدا کنید و اجرا کنید. دستور آماده در متن تمرین نیست؛ اگر گیر
+            کردید از «نمایش راهنمایی بعدی» استفاده کنید (هر راهنمایی نمره را کم می‌کند).
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">قوانین اعتبارسنجی مخفی هستند.</p>
         </Card>
         <Card>
           <CardTitle>ترمینال آزمایشگاه</CardTitle>

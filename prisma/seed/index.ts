@@ -9,6 +9,7 @@ import { k8sDays } from "./days-k8s";
 import { iacDays } from "./days-iac";
 import { obsDays } from "./days-obs";
 import { sreDays } from "./days-sre";
+import { platformDays } from "./days-platform";
 import type { DaySeed } from "./types";
 
 const prisma = new PrismaClient();
@@ -164,6 +165,7 @@ async function main() {
     ...iacDays,
     ...obsDays,
     ...sreDays,
+    ...platformDays,
   ];
 
   for (const day of allDays) {

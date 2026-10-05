@@ -78,13 +78,14 @@ export function sa(promptFa: string, correctAnswer: string, explanationFa: strin
   return { type: "SHORT_ANSWER", promptFa, correctAnswer, explanationFa, points, topicSlug };
 }
 
-/** تمرین یادداشت‌برداری مصاحبه — در لب با نوشتن فایل چک می‌شود */
+/** تمرین یادداشت/هدف — دستور دقیق فقط در راهنمایی سطح ۳ */
 export function noteExercise(opts: {
   titleFa: string;
   topicSlug: string;
   lessonSlug: string;
   path: string;
   mustContain: string;
+  /** سؤال یا هدف؛ بدون بلوک bash و بدون فرمان آماده */
   instructionsMd: string;
   difficulty?: string;
   maxScore?: number;
@@ -99,9 +100,18 @@ export function noteExercise(opts: {
     maxScore: opts.maxScore ?? 15,
     validation: { checks: [{ type: "fileContains", path: opts.path, text: opts.mustContain }] },
     hints: opts.hints ?? [
-      { level: 1, textFa: `خروجی را در ${opts.path} ذخیره کنید.` },
-      { level: 2, textFa: `متن باید شامل «${opts.mustContain}» باشد.` },
-      { level: 3, textFa: `printf '%s\\n' '${opts.mustContain}' > ${opts.path}` },
+      {
+        level: 1,
+        textFa: `پاسخ را در فایل \`${opts.path}\` ثبت کنید (مسیر مطلق با /).`,
+      },
+      {
+        level: 2,
+        textFa: `متن فایل باید شامل «${opts.mustContain}» باشد؛ با ویرایشگر یا redirect بنویسید.`,
+      },
+      {
+        level: 3,
+        textFa: `printf '%s\\n' 'پاسخ شما شامل ${opts.mustContain}' > ${opts.path}`,
+      },
     ],
   };
 }

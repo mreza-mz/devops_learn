@@ -44,7 +44,7 @@ Next.js · Prisma/SQLite · Docker sandbox · xterm.js · optional [AvalAI](http
 | --- | --- |
 | `npm run dev` | App + terminal gateway |
 | `npm run test` | Vitest |
-| `npm run db:seed` | Seed 38-day curriculum (Linux → SRE) |
+| `npm run db:seed` | Seed 47-day curriculum (Linux → SRE → platform tools from web sources) |
 | `npm run db:export -- [out.db]` | Export SQLite backup (progress + lessons) |
 | `npm run db:import -- <backup.db>` | Restore a previous backup |
 | `npm run lab:build` | Build `devops-learn-lab:latest` |

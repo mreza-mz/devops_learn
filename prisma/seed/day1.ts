@@ -271,19 +271,9 @@ uptime
         titleFa: "نسخهٔ کرنل را ذخیره کنید",
         topicSlug: "linux-filesystem",
         lessonSlug: "linux-architecture",
-        instructionsMd: `خروجی فرمان \`uname -a\` را در فایل \`/tmp/uname.txt\` ذخیره کنید.
+        instructionsMd: `چطور می‌توانید اطلاعات نسخهٔ کرنل این ماشین را پیدا کنید و نتیجه را در \`/tmp/uname.txt\` ثبت کنید؟
 
-**مسیر مهم است.** اسلش اول یعنی از ریشه:
-
-- \`tmp/uname.txt\` یعنی پوشهٔ tmp همین‌جا (معمولاً \`/root/tmp\`) — اعتبارسنجی این را قبول نمی‌کند.
-- \`/tmp/uname.txt\` یعنی پوشهٔ موقت سیستم — همین را می‌خواهیم.
-
-\`/tmp\` از قبل وجود دارد؛ \`mkdir\` لازم نیست.
-
-\`\`\`bash
-uname -a > /tmp/uname.txt
-cat /tmp/uname.txt
-\`\`\``,
+**مسیر مطلق مهم است:** فایل باید دقیقاً داخل \`/tmp\` سیستم ساخته شود، نه در یک پوشهٔ نسبی به نام \`tmp\`.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -293,8 +283,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "مسیر باید با / شروع شود: /tmp نه tmp." },
-          { level: 2, textFa: "پوشهٔ /tmp از قبل هست؛ فقط خروجی را با > در /tmp/uname.txt بنویسید." },
+          { level: 1, textFa: "کدام ابزار اطلاعات کرنل را گزارش می‌کند؟ به تفاوت مسیر مطلق و نسبی هم دقت کنید." },
+          { level: 2, textFa: "نمایش کامل اطلاعات کرنل به یک گزینه نیاز دارد؛ خروجی را با تغییر مسیر خروجی در فایل مقصد ثبت کنید." },
           { level: 3, textFa: "uname -a > /tmp/uname.txt" },
         ],
       },
@@ -302,9 +292,7 @@ cat /tmp/uname.txt
         titleFa: "شل فعلی را پیدا کنید",
         topicSlug: "linux-filesystem",
         lessonSlug: "linux-architecture",
-        instructionsMd: `مقدار شل فعلی را در \`/tmp/shell.txt\` بنویسید (با اسلش اول؛ نه \`tmp/shell.txt\`).
-
-متغیر \`SHELL\` را با \`echo\` چاپ کنید و به همان فایل بفرستید.`,
+        instructionsMd: `شل فعلی در کدام متغیر محیطی نگه‌داری می‌شود؟ مقدار آن را پیدا کنید و در مسیر مطلق \`/tmp/shell.txt\` ثبت کنید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -314,8 +302,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "نام متغیر را با $ می‌نویسند؛ مثلاً $SHELL." },
-          { level: 2, textFa: "echo مقدار را چاپ می‌کند؛ با > آن را در فایل بگذارید." },
+          { level: 1, textFa: "متغیرهای محیطی و ابزاری برای چاپ مقدارشان را به یاد بیاورید." },
+          { level: 2, textFa: "برای خواندن مقدار متغیر SHELL به پیشوند $ نیاز دارید؛ خروجی باید جایگزین محتوای فایل مقصد شود." },
           { level: 3, textFa: "echo $SHELL > /tmp/shell.txt" },
         ],
       },
@@ -323,7 +311,7 @@ cat /tmp/uname.txt
         titleFa: "توزیع سیستم‌عامل را ثبت کنید",
         topicSlug: "linux-filesystem",
         lessonSlug: "linux-architecture",
-        instructionsMd: `محتوای \`/etc/os-release\` را در \`/tmp/os-release.txt\` کپی کنید تا بعداً ببینید این ماشین چه توزیعی است.`,
+        instructionsMd: `چطور می‌توانید اطلاعات توزیع سیستم‌عامل را از \`/etc/os-release\` بخوانید و نسخه‌ای از محتوای آن را در \`/tmp/os-release.txt\` ثبت کنید؟`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -333,8 +321,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "cat فایل را می‌خواند؛ خروجی‌اش را می‌توانید redirect کنید." },
-          { level: 2, textFa: "مبدأ /etc/os-release است و مقصد /tmp/os-release.txt." },
+          { level: 1, textFa: "به ابزارهای خواندن فایل و هدایت خروجی فکر کنید." },
+          { level: 2, textFa: "فایل مبدأ را بخوانید و خروجی را به‌جای ترمینال در مسیر مقصد بنویسید." },
           { level: 3, textFa: "cat /etc/os-release > /tmp/os-release.txt" },
         ],
       },
@@ -342,7 +330,7 @@ cat /tmp/uname.txt
         titleFa: "پیمایش سیستم فایل",
         topicSlug: "linux-filesystem",
         lessonSlug: "filesystem",
-        instructionsMd: `دایرکتوری \`/home/student/workspace\` را بسازید (اگر نیست). سپس وارد همان دایرکتوری شوید و خروجی \`pwd\` را در \`/home/student/workspace/pwd.txt\` بنویسید.`,
+        instructionsMd: `آیا می‌توانید فضای کار \`/home/student/workspace\` را طوری آماده کنید که نبودن پوشه‌های والد مانع نشود؟ سپس وارد آن شوید، مسیر فعلی را کشف کنید و نتیجه را در \`/home/student/workspace/pwd.txt\` ثبت کنید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -353,8 +341,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "اول با mkdir دایرکتوری بسازید و بعد با cd وارد آن شوید." },
-          { level: 2, textFa: "خروجی یک فرمان را می‌توانید با > به فایل بفرستید." },
+          { level: 1, textFa: "به خانوادهٔ ابزارهای ساخت پوشه، جابه‌جایی و نمایش مسیر فعلی فکر کنید." },
+          { level: 2, textFa: "ساخت پوشه‌های تودرتو به گزینهٔ والدها نیاز دارد؛ پس از ورود، خروجی مسیر فعلی را در فایل بنویسید." },
           { level: 3, textFa: "mkdir -p /home/student/workspace && cd /home/student/workspace && pwd > pwd.txt" },
         ],
       },
@@ -362,9 +350,7 @@ cat /tmp/uname.txt
         titleFa: "فهرست ریشه را ببینید",
         topicSlug: "linux-filesystem",
         lessonSlug: "filesystem",
-        instructionsMd: `خروجی \`ls /\` را در \`/home/student/workspace/root-listing.txt\` ذخیره کنید.
-
-بعد از ذخیره، فایل را با \`cat\` باز کنید و پوشه‌هایی مثل \`etc\` و \`var\` را پیدا کنید.`,
+        instructionsMd: `در ریشهٔ سیستم چه پوشه‌هایی وجود دارند؟ فهرست آن را در \`/home/student/workspace/root-listing.txt\` ثبت کنید و بررسی کنید که نام‌هایی مانند \`etc\` و \`var\` در نتیجه دیده می‌شوند.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -375,8 +361,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "اول مطمئن شوید /home/student/workspace وجود دارد." },
-          { level: 2, textFa: "ls / را به فایل workspace هدایت کنید." },
+          { level: 1, textFa: "از ابزار فهرست‌کردن دایرکتوری‌ها استفاده کنید و در صورت نیاز فضای کار را بسازید." },
+          { level: 2, textFa: "دایرکتوری هدف برای فهرست‌کردن، ریشه است؛ خروجی را در فایل مقصد جایگزین کنید." },
           { level: 3, textFa: "mkdir -p /home/student/workspace && ls / > /home/student/workspace/root-listing.txt" },
         ],
       },
@@ -384,7 +370,7 @@ cat /tmp/uname.txt
         titleFa: "مسیر لاگ‌ها را بنویسید",
         topicSlug: "linux-filesystem",
         lessonSlug: "filesystem",
-        instructionsMd: `طبق درخت سیستم فایل، لاگ‌های سنتی لینوکس در کدام مسیر هستند؟ همان مسیر را (فقط خود مسیر) در \`/home/student/workspace/logs-path.txt\` بنویسید.`,
+        instructionsMd: `طبق درخت سیستم فایل، لاگ‌های سنتی لینوکس در کدام مسیر مطلق نگه‌داری می‌شوند؟ فقط همان مسیر را در \`/home/student/workspace/logs-path.txt\` ثبت کنید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -394,8 +380,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "پوشهٔ var برای داده‌های متغیر مثل لاگ است." },
-          { level: 2, textFa: "مسیر کامل با / شروع می‌شود." },
+          { level: 1, textFa: "به بخشی از درخت فایل‌سیستم فکر کنید که داده‌های متغیر سرویس‌ها را نگه می‌دارد." },
+          { level: 2, textFa: "پاسخ زیر شاخهٔ var است و باید به‌صورت مسیر مطلق، با اسلش آغازین، نوشته شود." },
           { level: 3, textFa: "echo /var/log > /home/student/workspace/logs-path.txt" },
         ],
       },
@@ -403,7 +389,7 @@ cat /tmp/uname.txt
         titleFa: "ساخت دایرکتوری و فایل",
         topicSlug: "linux-filesystem",
         lessonSlug: "basic-commands",
-        instructionsMd: `مسیر \`/opt/app/data\` را بسازید و فایل \`/opt/app/README.txt\` با متن \`devops-learn\` ایجاد کنید.`,
+        instructionsMd: `چطور مسیر تودرتوی \`/opt/app/data\` را حتی در صورت نبودن والدها می‌سازید؟ سپس فایل \`/opt/app/README.txt\` را طوری ایجاد کنید که شامل متن \`devops-learn\` باشد.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -413,8 +399,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "mkdir -p چند سطح را یکجا می‌سازد." },
-          { level: 2, textFa: "از echo یا tee برای نوشتن متن استفاده کنید." },
+          { level: 1, textFa: "به ابزار ساخت دایرکتوری و یک ابزار نوشتن متن در فایل نیاز دارید." },
+          { level: 2, textFa: "برای ساخت والدهای غایب از گزینهٔ مناسب ساخت پوشه استفاده کنید؛ سپس متن را به فایل مقصد هدایت کنید." },
           { level: 3, textFa: "mkdir -p /opt/app/data && echo devops-learn > /opt/app/README.txt" },
         ],
       },
@@ -422,7 +408,7 @@ cat /tmp/uname.txt
         titleFa: "کپی یک فایل یادداشت",
         topicSlug: "linux-filesystem",
         lessonSlug: "basic-commands",
-        instructionsMd: `فایل \`/home/student/workspace/notes.txt\` را با متن \`hello\` بسازید. سپس یک کپی از آن به نام \`/home/student/workspace/notes.bak\` بگیرید.`,
+        instructionsMd: `فایل \`/home/student/workspace/notes.txt\` باید شامل متن \`hello\` باشد و یک نسخهٔ پشتیبان هم در \`/home/student/workspace/notes.bak\` داشته باشد. با چه ابزارهایی متن را ثبت و فایل را کپی می‌کنید؟`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -432,8 +418,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "اول فایل را با echo بسازید." },
-          { level: 2, textFa: "فرمان کپی cp است: cp مبدأ مقصد." },
+          { level: 1, textFa: "ابتدا با ابزار نوشتن متن فایل اصلی را بسازید، سپس از خانوادهٔ ابزارهای کپی کمک بگیرید." },
+          { level: 2, textFa: "در عملیات کپی، ترتیب آرگومان‌ها مبدأ و سپس مقصد است؛ مطمئن شوید فضای کار وجود دارد." },
           { level: 3, textFa: "echo hello > /home/student/workspace/notes.txt && cp /home/student/workspace/notes.txt /home/student/workspace/notes.bak" },
         ],
       },
@@ -441,7 +427,7 @@ cat /tmp/uname.txt
         titleFa: "هویت کاربر فعلی",
         topicSlug: "users-groups",
         lessonSlug: "users",
-        instructionsMd: `خروجی \`whoami\` را در \`/tmp/whoami.txt\` و خروجی \`id\` را در \`/tmp/id.txt\` ذخیره کنید.`,
+        instructionsMd: `چطور نام کاربر فعلی و جزئیات شناسه‌ها و گروه‌های او را پیدا می‌کنید؟ نام را در \`/tmp/whoami.txt\` و جزئیات هویت را در \`/tmp/id.txt\` ثبت کنید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -453,8 +439,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "هر فرمان را جداگانه به فایل خودش بفرستید." },
-          { level: 2, textFa: "whoami نام را می‌دهد؛ id جزئیات UID را." },
+          { level: 1, textFa: "دو ابزار هویتی لازم دارید: یکی برای نام فعلی و دیگری برای UID و گروه‌ها." },
+          { level: 2, textFa: "خروجی هر ابزار را جداگانه و با دقت در فایل متناظر خودش جایگزین کنید." },
           { level: 3, textFa: "whoami > /tmp/whoami.txt && id > /tmp/id.txt" },
         ],
       },
@@ -462,15 +448,15 @@ cat /tmp/uname.txt
         titleFa: "ایجاد کاربر لینوکس",
         topicSlug: "users-groups",
         lessonSlug: "users",
-        instructionsMd: `کاربری به نام \`deploy\` با شل \`/bin/bash\` بسازید. خانهٔ کاربر لازم نیست پیچیده باشد؛ مهم این است که کاربر وجود داشته باشد و شل درست باشد.`,
+        instructionsMd: `چطور یک حساب کاربری به نام \`deploy\` ایجاد می‌کنید که شل ورود آن \`/bin/bash\` باشد؟ ساخت دایرکتوری خانه جزو این تمرین نیست؛ وجود کاربر و شل درست ارزیابی می‌شود.`,
         difficulty: "medium",
         maxScore: 6,
         validation: {
           checks: [{ type: "userExists", name: "deploy", shell: "/bin/bash" }],
         },
         hints: [
-          { level: 1, textFa: "ساخت کاربر با useradd انجام می‌شود." },
-          { level: 2, textFa: "گزینه -s شل ورود را مشخص می‌کند." },
+          { level: 1, textFa: "به ابزارهای مدیریت حساب‌های کاربری لینوکس فکر کنید." },
+          { level: 2, textFa: "ابزار ساخت کاربر گزینه‌ای برای تعیین login shell دارد؛ مقدار آن باید /bin/bash باشد." },
           { level: 3, textFa: "useradd -s /bin/bash deploy" },
         ],
       },
@@ -478,7 +464,7 @@ cat /tmp/uname.txt
         titleFa: "بررسی فرآیندها",
         topicSlug: "processes",
         lessonSlug: "processes",
-        instructionsMd: `خروجی \`ps aux\` را در \`/tmp/ps.txt\` ذخیره کنید تا فهرست فرآیندها را داشته باشید.`,
+        instructionsMd: `چطور می‌توانید تصویری کامل از فرآیندهای همهٔ کاربران، همراه با جزئیات آن‌ها، تهیه کنید؟ نتیجه را در \`/tmp/ps.txt\` ثبت کنید تا ستون \`PID\` در فایل دیده شود.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -488,8 +474,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "ps aux را به فایل redirect کنید." },
-          { level: 2, textFa: "از > /tmp/ps.txt استفاده کنید." },
+          { level: 1, textFa: "از ابزار نمایش لحظه‌ای فرآیندها استفاده کنید." },
+          { level: 2, textFa: "نمایش همهٔ کاربران با قالب جزئی به مجموعه گزینه‌های رایج این ابزار نیاز دارد؛ خروجی را در فایل مقصد بنویسید." },
           { level: 3, textFa: "ps aux > /tmp/ps.txt" },
         ],
       },
@@ -497,7 +483,7 @@ cat /tmp/uname.txt
         titleFa: "مصرف حافظه و دیسک",
         topicSlug: "memory",
         lessonSlug: "processes",
-        instructionsMd: `خروجی \`free -m\` را در \`/tmp/free.txt\` و خروجی \`df -h\` را در \`/tmp/df.txt\` ذخیره کنید.`,
+        instructionsMd: `برای بررسی منابع ماشین، چگونه وضعیت حافظه را با واحد مگابایت و فضای فایل‌سیستم‌ها را با واحدهای خوانا گزارش می‌کنید؟ گزارش حافظه را در \`/tmp/free.txt\` و گزارش دیسک را در \`/tmp/df.txt\` ثبت کنید.`,
         difficulty: "easy",
         maxScore: 6,
         validation: {
@@ -508,8 +494,8 @@ cat /tmp/uname.txt
           ],
         },
         hints: [
-          { level: 1, textFa: "دو فرمان جدا را به دو فایل بفرستید." },
-          { level: 2, textFa: "free حافظه و df دیسک را نشان می‌دهد." },
+          { level: 1, textFa: "یک ابزار گزارش حافظه و یک ابزار گزارش فضای فایل‌سیستم لازم دارید." },
+          { level: 2, textFa: "برای حافظه واحد مگابایت و برای دیسک قالب human-readable را انتخاب کنید؛ هر خروجی در فایل خودش قرار می‌گیرد." },
           { level: 3, textFa: "free -m > /tmp/free.txt && df -h > /tmp/df.txt" },
         ],
       },
@@ -520,17 +506,15 @@ cat /tmp/uname.txt
 
 حدس نزنید؛ با داده جلو بروید. در روز اول معمولاً یک فرآیند، CPU را پر کرده است.`,
       symptomsMd: `- پاسخ‌دهی کند\n- کاربران از «سنگین بودن سرور» می‌گویند\n- هشدار دقیق متریک هنوز تنظیم نشده`,
-      observabilityMd: `ابزارها: \`uptime\`, \`ps\`, \`top\`, \`free -m\`, \`df -h\`.
+      observabilityMd: `برای بررسی از ابزارهای مشاهدهٔ بار سیستم، فرآیندها، حافظه و دیسک کمک بگیرید.
 
-**ترتیب پیشنهادی:**
+- آیا بار کلی ماشین غیرعادی است؟
+- کدام فرآیند بیشترین CPU را مصرف می‌کند و PID آن چیست؟
+- آیا کمبود حافظه یا فضای دیسک می‌تواند علت کندی باشد؟
+- پس از شناسایی فرآیند مسئله‌دار، چگونه آن را به‌صورت مؤدبانه متوقف می‌کنید؟
+- با چه مشاهده‌ای مطمئن می‌شوید مصرف غیرعادی برطرف شده است؟
 
-1. \`uptime\` — عدد load بالا یعنی کار زیاد روی CPU.
-2. \`ps aux --sort=-%cpu | head\` — فرآیند بالای فهرست با %CPU خیلی بالا را پیدا کنید.
-3. PID همان شمارهٔ فرآیند است. برای توقف: \`kill PID\`
-4. دوباره \`ps aux --sort=-%cpu | head\` را بزنید تا مطمئن شوید رفته است.
-5. دکمهٔ اعتبارسنجی را بزنید.
-
-اگر \`top\` را باز کردید، با کلید \`q\` خارج شوید.`,
+اگر از نمای زندهٔ فرآیندها استفاده کردید، روش خروج از آن را هم به یاد داشته باشید.`,
       environmentMd: `کانتینر لینوکس ایزوله شبیه سرور تولید روز اول.`,
       hiddenRootCause: "A runaway `yes` process is consuming CPU in the background.",
       investigationPath: ["uptime", "ps aux --sort=-%cpu", "identify yes process", "kill the process"],
