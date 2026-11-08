@@ -2,14 +2,15 @@ import Link from "next/link";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { progressBadgeTone, progressStatusFa } from "@/lib/progress-labels";
+import { trackLearnHref } from "@/config/tracks";
 import type { learningService } from "@/services/learning/daily-learning-service";
 
 type Curriculum = Awaited<ReturnType<typeof learningService.listDaysWithProgress>>;
 type DayItem = Curriculum["days"][number];
 
-function DayRow({ day }: { day: DayItem }) {
+function DayRow({ day, trackSlug }: { day: DayItem; trackSlug: string }) {
   const locked = !day.unlocked;
-  const href = `/learn/${day.dayNumber}`;
+  const href = trackLearnHref(trackSlug, day.dayNumber);
   const score = day.status ? Math.round(day.latestScore) : null;
   const best = day.status ? Math.round(day.bestScore) : null;
 
@@ -55,7 +56,7 @@ function DayRow({ day }: { day: DayItem }) {
   );
 }
 
-export function CurriculumDays({ curriculum }: { curriculum: Curriculum }) {
+export function CurriculumDays({ curriculum, trackSlug }: { curriculum: Curriculum; trackSlug: string }) {
   return (
     <div className="space-y-6">
       {curriculum.phases.map((phase) => (
@@ -70,7 +71,7 @@ export function CurriculumDays({ curriculum }: { curriculum: Curriculum }) {
           <ul className="mt-4 space-y-2">
             {phase.days.map((day) => (
               <li key={day.id}>
-                <DayRow day={day} />
+                <DayRow day={day} trackSlug={trackSlug} />
               </li>
             ))}
           </ul>

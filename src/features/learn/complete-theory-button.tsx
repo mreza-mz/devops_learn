@@ -4,7 +4,15 @@ import { useState, useTransition } from "react";
 import { completeTheoryAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 
-export function CompleteTheoryButton({ dayNumber, done }: { dayNumber: number; done: boolean }) {
+export function CompleteTheoryButton({
+  trackSlug,
+  dayNumber,
+  done,
+}: {
+  trackSlug: string;
+  dayNumber: number;
+  done: boolean;
+}) {
   const [isDone, setIsDone] = useState(done);
   const [pending, start] = useTransition();
   return (
@@ -13,7 +21,7 @@ export function CompleteTheoryButton({ dayNumber, done }: { dayNumber: number; d
       disabled={isDone || pending}
       onClick={() =>
         start(async () => {
-          await completeTheoryAction(dayNumber);
+          await completeTheoryAction(trackSlug, dayNumber);
           setIsDone(true);
         })
       }

@@ -15,6 +15,8 @@ import { consumeRateLimit } from "@/lib/rate-limit";
 import { settingsUpdateSchema } from "@/validators/ai";
 import { CONTENT_STATUS } from "@/config/constants";
 import { prisma as db } from "@/server/db/prisma";
+import { interviewService } from "@/services/interview/interview-service";
+import type { InterviewMode } from "@/config/interview-bank";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
   const parsed = loginSchema.safeParse({
@@ -37,7 +39,7 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     role: user.role as "ADMIN" | "LEARNER",
   });
   await setSessionCookie(token);
-  redirect("/dashboard");
+  redirect("/tracks");
 }
 
 export async function logoutAction() {
@@ -45,9 +47,19 @@ export async function logoutAction() {
   redirect("/login");
 }
 
-export async function completeTheoryAction(dayNumber: number) {
+export async function completeTheoryAction(trackSlug: string, dayNumber: number) {
   const user = await requireUser();
-  await learningService.completeTheory(user.id, dayNumber);
+  const { trackService } = await import("@/services/tracks/track-service");
+  const track = await trackService.getBySlug(trackSlug);
+  await learningService.completeTheory(user.id, track.id, dayNumber);
+}
+
+export async function selectTrackAction(trackSlug: string, formData?: FormData) {
+  void formData;
+  const user = await requireUser();
+  const { trackService } = await import("@/services/tracks/track-service");
+  await trackService.setActiveTrack(user.id, trackSlug);
+  redirect(`/t/${trackSlug}/dashboard`);
 }
 
 export async function startExerciseAction(exerciseId: string) {
@@ -192,4 +204,28 @@ export async function upsertExerciseAction(formData: FormData) {
       maxScore: Number(formData.get("maxScore") ?? 6),
     },
   });
+}
+
+export async function startInterviewAction(trackSlug: string, mode: InterviewMode) {
+  const user = await requireUser();
+  const session = await interviewService.startSession(user.id, trackSlug, mode);
+  redirect(`/t/${trackSlug}/interview/${session.id}`);
+}
+
+export async function submitInterviewAnswerAction(sessionId: string, answerText: string) {
+  const user = await requireUser();
+  try {
+    return { ok: true as const, data: await interviewService.submitAnswer(user.id, sessionId, answerText) };
+  } catch (error) {
+    return { ok: false as const, error: toUserError(error).message };
+  }
+}
+
+export async function finishInterviewAction(sessionId: string) {
+  const user = await requireUser();
+  try {
+    return { ok: true as const, data: await interviewService.finishSession(user.id, sessionId) };
+  } catch (error) {
+    return { ok: false as const, error: toUserError(error).message };
+  }
 }

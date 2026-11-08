@@ -10,14 +10,18 @@ export const userRepository = {
 };
 
 export const curriculumRepository = {
-  getDay(dayNumber: number) {
+  getDay(trackId: string, dayNumber: number) {
     return prisma.dailyLesson.findUnique({
-      where: { dayNumber },
-      include: { phase: true, lessons: true, exercises: true, scenario: true, exam: true },
+      where: { trackId_dayNumber: { trackId, dayNumber } },
+      include: { phase: true, lessons: true, exercises: true, scenario: true, exam: true, track: true },
     });
   },
-  listTopics() {
-    return prisma.topic.findMany({ include: { phase: true }, orderBy: { order: "asc" } });
+  listTopics(trackId?: string) {
+    return prisma.topic.findMany({
+      where: trackId ? { trackId } : undefined,
+      include: { phase: true, track: true },
+      orderBy: { order: "asc" },
+    });
   },
 };
 

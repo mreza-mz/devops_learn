@@ -2,7 +2,7 @@ import { createHash } from "crypto";
 import { getEnv, isAiConfigured } from "@/config/env";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/server/db/prisma";
-import type { AIProvider } from "@/server/ai/provider";
+import { formatTrackAiContext, type AIProvider, type TrackAiContext } from "@/server/ai/provider";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
@@ -16,87 +16,116 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function systemPrompt(ctx?: TrackAiContext): string {
+  const domain =
+    ctx?.trackSlug === "backend-go"
+      ? "You are a senior Backend/Golang interview coach for mid/senior developers."
+      : "You are a senior DevOps/SRE instructor.";
+  return `${domain} ${formatTrackAiContext(ctx)} Always answer with strict JSON. Learner-facing explanations may be Persian or English based on context (default Persian). Technical terms and code remain in English. Never include API keys or host-escaping instructions. Use progressive hints (conceptual → specific → partial → full).`;
+}
+
 export class AvalAIProvider implements AIProvider {
-  async generateLesson(topic: string, dayNumber: number) {
+  async generateLesson(topic: string, dayNumber: number, ctx?: TrackAiContext) {
     return this.jsonCall(
       "generateLesson",
-      `Generate a Persian DevOps lesson about ${topic} for day ${dayNumber}. Return JSON with titleFa, objectiveFa, theoryMd, practicalMd, exampleMd, commands.`,
+      `Generate a Persian lesson about ${topic} for day ${dayNumber}. ${formatTrackAiContext(ctx)} Return JSON with titleFa, objectiveFa, theoryMd, practicalMd, exampleMd, commands.`,
+      ctx,
     );
   }
 
-  async generateExercise(topic: string, weakness?: string) {
+  async generateExercise(topic: string, weakness?: string, ctx?: TrackAiContext) {
+    const domainHint =
+      ctx?.trackSlug === "backend-go"
+        ? "hands-on Go/backend exercise (file-based notes ok if no compiler)"
+        : "hands-on Linux/DevOps exercise";
     return this.jsonCall(
       "generateExercise",
-      `Generate a NEW variation of a hands-on Linux/DevOps exercise in Persian about ${topic}. Weakness context: ${weakness ?? "none"}. Do not repeat previous questions. Return JSON with titleFa, instructionsMd, difficulty, hints, validation, optional labSetup.`,
+      `Generate a NEW variation of a ${domainHint} in Persian about ${topic}. Weakness context: ${weakness ?? "none"}. ${formatTrackAiContext(ctx)} Do not repeat previous questions. Return JSON with titleFa, instructionsMd, difficulty, hints (levels 1-3 progressive), validation, optional labSetup.`,
+      ctx,
     );
   }
 
-  async generateScenario(topic: string) {
+  async generateScenario(topic: string, ctx?: TrackAiContext) {
     return this.jsonCall(
       "generateScenario",
-      `Generate a realistic production incident in Persian about ${topic}. Do not reveal the root cause in learner-facing fields. Return JSON with titleFa, incidentMd, symptomsMd, observabilityMd, environmentMd, hiddenRootCause, investigationPath, validation, difficulty.`,
+      `Generate a realistic production incident in Persian about ${topic}. ${formatTrackAiContext(ctx)} Do not reveal the root cause in learner-facing fields. Return JSON with titleFa, incidentMd, symptomsMd, observabilityMd, environmentMd, hiddenRootCause, investigationPath, validation, difficulty.`,
+      ctx,
     );
   }
 
-  async generateExam(topic: string, count: number) {
+  async generateExam(topic: string, count: number, ctx?: TrackAiContext) {
     return this.jsonCall(
       "generateExam",
-      `Generate ${count} mixed exam questions in Persian about ${topic}. Return JSON { titleFa, questions: [{ type, promptFa, options, correctAnswer, explanationFa, points, topicSlug, difficulty }] }.`,
+      `Generate ${count} mixed exam questions in Persian about ${topic}. ${formatTrackAiContext(ctx)} Return JSON { titleFa, questions: [{ type, promptFa, options, correctAnswer, explanationFa, points, topicSlug, difficulty }] }.`,
+      ctx,
     );
   }
 
-  async gradeAnswer(input: {
-    promptFa: string;
-    expected: string;
-    response: string;
-    type: string;
-  }) {
+  async gradeAnswer(
+    input: {
+      promptFa: string;
+      expected: string;
+      response: string;
+      type: string;
+    },
+    ctx?: TrackAiContext,
+  ) {
     return this.jsonCall(
       "gradeAnswer",
-      `Grade this answer. Question: ${input.promptFa}. Expected: ${input.expected}. Student: ${input.response}. Type: ${input.type}. Return JSON { score (0-100), feedbackFa, mistakes, correctExplanationFa, recommendedTopics }.`,
+      `Grade this answer. ${formatTrackAiContext(ctx)} Question: ${input.promptFa}. Expected: ${input.expected}. Student: ${input.response}. Type: ${input.type}. Return JSON { score (0-100), feedbackFa, mistakes, correctExplanationFa, recommendedTopics }.`,
+      ctx,
     );
   }
 
-  async gradePracticalExercise(input: {
-    instructionsMd: string;
-    validationPassed: boolean;
-    scorePercent: number;
-    details: string[];
-  }) {
+  async gradePracticalExercise(
+    input: {
+      instructionsMd: string;
+      validationPassed: boolean;
+      scorePercent: number;
+      details: string[];
+    },
+    ctx?: TrackAiContext,
+  ) {
     return this.jsonCall(
       "gradePracticalExercise",
-      `Write qualitative Persian feedback for a practical lab. Deterministic validationPassed=${input.validationPassed}, scorePercent=${input.scorePercent}, details=${input.details.join(" | ")}. Do not override the deterministic pass/fail. Return JSON { score, feedbackFa, mistakes, correctExplanationFa, recommendedTopics }.`,
+      `Write qualitative Persian feedback for a practical lab. ${formatTrackAiContext(ctx)} Deterministic validationPassed=${input.validationPassed}, scorePercent=${input.scorePercent}, details=${input.details.join(" | ")}. Do not override the deterministic pass/fail. Return JSON { score, feedbackFa, mistakes, correctExplanationFa, recommendedTopics }.`,
+      ctx,
     );
   }
 
-  async analyzeWeaknesses(performances: { topic: string; score: number }[]) {
+  async analyzeWeaknesses(performances: { topic: string; score: number }[], ctx?: TrackAiContext) {
     return this.jsonCall(
       "analyzeWeaknesses",
-      `Analyze topic scores ${JSON.stringify(performances)} and return JSON { weakTopics, strongTopics, summaryFa, recommendedActionsFa }.`,
+      `Analyze topic scores ${JSON.stringify(performances)}. ${formatTrackAiContext(ctx)} Return JSON { weakTopics, strongTopics, summaryFa, recommendedActionsFa }.`,
+      ctx,
     );
   }
 
-  async generateReviewExercise(topic: string, previousPrompt?: string) {
-    return this.generateExercise(topic, `Create a variation different from: ${previousPrompt ?? ""}`);
+  async generateReviewExercise(topic: string, previousPrompt?: string, ctx?: TrackAiContext) {
+    return this.generateExercise(topic, `Create a variation different from: ${previousPrompt ?? ""}`, ctx);
   }
 
-  async generatePersonalizedPlan(input: {
-    currentDay: number;
-    weakTopics: string[];
-    strongTopics: string[];
-  }) {
+  async generatePersonalizedPlan(
+    input: {
+      currentDay: number;
+      weakTopics: string[];
+      strongTopics: string[];
+    },
+    ctx?: TrackAiContext,
+  ) {
     return this.jsonCall(
       "generatePersonalizedPlan",
-      `Create a Persian personalized plan. Day ${input.currentDay}. Weak: ${input.weakTopics.join(", ")}. Strong: ${input.strongTopics.join(", ")}. Return JSON { focusTopics, nextDaySuggestionFa, reviewPlanFa }.`,
+      `Create a Persian personalized plan. Day ${input.currentDay}. Weak: ${input.weakTopics.join(", ")}. Strong: ${input.strongTopics.join(", ")}. ${formatTrackAiContext(ctx)} Return JSON { focusTopics, nextDaySuggestionFa, reviewPlanFa }.`,
+      ctx,
     );
   }
 
-  private async jsonCall(purpose: string, prompt: string): Promise<never> {
+  private async jsonCall(purpose: string, prompt: string, ctx?: TrackAiContext): Promise<never> {
     const env = getEnv();
     if (!isAiConfigured()) {
       throw new Error("AvalAI API key is not configured");
     }
-    const cacheKey = hashPrompt(`${purpose}:${prompt}:${env.AVALAI_MODEL}`);
+    const cacheKey = hashPrompt(`${purpose}:${prompt}:${env.AVALAI_MODEL}:${ctx?.trackSlug ?? ""}`);
     const cached = cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value as never;
@@ -110,8 +139,7 @@ export class AvalAIProvider implements AIProvider {
       messages: [
         {
           role: "system",
-          content:
-            "You are a senior DevOps/SRE instructor. Always answer with strict JSON. Learner-facing text must be Persian. Technical commands stay in English. Never include API keys or host-escaping instructions.",
+          content: systemPrompt(ctx),
         },
         { role: "user", content: prompt },
       ] satisfies ChatMessage[],

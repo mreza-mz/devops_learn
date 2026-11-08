@@ -6,6 +6,7 @@ import { CompleteTheoryButton } from "@/features/learn/complete-theory-button";
 import { prisma } from "@/server/db/prisma";
 import { ATTEMPT_STATUS } from "@/config/constants";
 import { cn } from "@/lib/utils";
+import { trackLearnHref } from "@/config/tracks";
 import type { learningService } from "@/services/learning/daily-learning-service";
 
 type Day = Awaited<ReturnType<typeof learningService.getDay>>;
@@ -40,10 +41,12 @@ export async function LessonSteps({
   day,
   theoryCompleted,
   userId,
+  trackSlug,
 }: {
   day: Day;
   theoryCompleted: boolean;
   userId: string;
+  trackSlug: string;
 }) {
   const attempts =
     day.exercises.length === 0
@@ -123,7 +126,7 @@ export async function LessonSteps({
                     index={exerciseIndex + 1}
                     titleFa={exercise.titleFa}
                     difficulty={exercise.difficulty}
-                    href={`/learn/${day.dayNumber}/exercise/${exercise.id}`}
+                    href={`${trackLearnHref(trackSlug, day.dayNumber)}/exercise/${exercise.id}`}
                     status={statusByExercise.get(exercise.id) ?? null}
                   />
                 ))}
@@ -139,7 +142,7 @@ export async function LessonSteps({
           اگر هر {totalSteps} قدم را خواندید، نظریه را ثبت کنید. تمرین‌ها نمرهٔ عملی جدا دارند.
         </p>
         <div className="mt-4">
-          <CompleteTheoryButton dayNumber={day.dayNumber} done={theoryCompleted} />
+          <CompleteTheoryButton trackSlug={trackSlug} dayNumber={day.dayNumber} done={theoryCompleted} />
         </div>
       </Card>
 
@@ -153,7 +156,7 @@ export async function LessonSteps({
                 index={index + 1}
                 titleFa={exercise.titleFa}
                 difficulty={exercise.difficulty}
-                href={`/learn/${day.dayNumber}/exercise/${exercise.id}`}
+                href={`${trackLearnHref(trackSlug, day.dayNumber)}/exercise/${exercise.id}`}
                 status={statusByExercise.get(exercise.id) ?? null}
               />
             ))}
@@ -166,7 +169,7 @@ export async function LessonSteps({
           <CardTitle>سناریوی تولید</CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">بعد از تمرین‌های قدم‌به‌قدم، یک مسئلهٔ واقعی‌تر حل کنید.</p>
           {day.scenario ? (
-            <Link className="mt-3 inline-block text-primary" href={`/learn/${day.dayNumber}/scenario`}>
+            <Link className="mt-3 inline-block text-primary" href={`${trackLearnHref(trackSlug, day.dayNumber)}/scenario`}>
               {day.scenario.titleFa}
             </Link>
           ) : null}
@@ -175,7 +178,7 @@ export async function LessonSteps({
           <CardTitle>آزمون پایان روز</CardTitle>
           <p className="mt-2 text-sm text-muted-foreground">وقتی تمرین و سناریو تمام شد، آزمون را بدهید.</p>
           {day.exam ? (
-            <Link className="mt-3 inline-block text-primary" href={`/learn/${day.dayNumber}/exam`}>
+            <Link className="mt-3 inline-block text-primary" href={`${trackLearnHref(trackSlug, day.dayNumber)}/exam`}>
               {day.exam.titleFa}
             </Link>
           ) : null}

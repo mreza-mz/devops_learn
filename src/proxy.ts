@@ -29,9 +29,13 @@ export async function proxy(request: NextRequest) {
     }
     const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
     if (pathname.startsWith("/admin") && payload.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/tracks", request.url));
     }
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", pathname);
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   } catch {
     return NextResponse.redirect(new URL("/login", request.url));
   }

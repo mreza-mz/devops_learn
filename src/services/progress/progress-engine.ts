@@ -7,6 +7,7 @@ import { canUnlockLevel, nextStreak } from "@/services/progress/level-engine";
 import { aiService } from "@/server/ai/service";
 import type { LevelRequirements } from "@/types/domain";
 import { Prisma } from "@prisma/client";
+import { trackService } from "@/services/tracks/track-service";
 
 export const progressEngine = {
   async getOrCreateDailyProgress(userId: string, dailyLessonId: string) {
@@ -28,7 +29,7 @@ export const progressEngine = {
   async recalculateDay(userId: string, dailyLessonId: string) {
     const daily = await prisma.dailyLesson.findUniqueOrThrow({
       where: { id: dailyLessonId },
-      include: { exercises: true, exam: true, scenario: true, phase: true },
+      include: { exercises: true, exam: true, scenario: true, phase: true, track: true },
     });
     const settings = await prisma.settings.findUniqueOrThrow({ where: { id: "global" } });
     const progress = await this.getOrCreateDailyProgress(userId, dailyLessonId);
@@ -92,12 +93,12 @@ export const progressEngine = {
     });
 
     if ((parts.exam > 0 || parts.practical > 0 || parts.scenario > 0) && total > 0) {
-      await this.applyXpAndStreak(userId, classification);
+      await this.applyXpAndStreak(userId, daily.trackId, classification);
       if (classification !== "failed") {
-        await this.maybeAdvanceDay(userId, daily.dayNumber);
+        await this.maybeAdvanceDay(userId, daily.trackId, daily.dayNumber);
       }
     }
-    await this.refreshWeakTopics(userId);
+    await this.refreshWeakTopics(userId, daily.trackId);
     await this.maybeUnlockLevel(userId);
     return updated;
   },
@@ -137,8 +138,11 @@ export const progressEngine = {
     }
   },
 
-  async refreshWeakTopics(userId: string) {
-    const skills = await prisma.userSkill.findMany({ where: { userId }, include: { topic: true } });
+  async refreshWeakTopics(userId: string, trackId?: string) {
+    const skills = await prisma.userSkill.findMany({
+      where: { userId, ...(trackId ? { topic: { trackId } } : {}) },
+      include: { topic: true },
+    });
     const settings = await prisma.settings.findUniqueOrThrow({ where: { id: "global" } });
     const weak = detectWeakTopics(
       skills.map((item) => ({ topicId: item.topicId, topicSlug: item.topic.slug, scoreAvg: item.scoreAvg, sampleCount: item.sampleCount })),
@@ -147,29 +151,34 @@ export const progressEngine = {
     return weak;
   },
 
-  async applyXpAndStreak(userId: string, classification: "failed" | "passed" | "excellent") {
-    const profile = await prisma.profile.findUniqueOrThrow({ where: { userId } });
-    const streak = nextStreak(profile.lastStudyDate, new Date(), profile.streak);
-    await prisma.profile.update({
-      where: { userId },
+  async applyXpAndStreak(userId: string, trackId: string, classification: "failed" | "passed" | "excellent") {
+    const trackProgress = await trackService.ensureUserTrackProgress(userId, trackId);
+    const streak = nextStreak(trackProgress.lastStudyDate, new Date(), trackProgress.streak);
+    const xpGain = xpForDailyResult(classification);
+    await prisma.userTrackProgress.update({
+      where: { id: trackProgress.id },
       data: {
-        xp: { increment: xpForDailyResult(classification) },
+        xp: { increment: xpGain },
         streak,
         lastStudyDate: new Date(),
       },
     });
-    await this.unlockAchievements(userId, streak);
+    await trackService.syncProfileMirror(userId, trackId);
+    await this.unlockAchievements(userId, streak, trackId);
   },
 
-  async maybeAdvanceDay(userId: string, completedDay: number) {
-    const profile = await prisma.profile.findUniqueOrThrow({ where: { userId } });
-    if (profile.currentDayNumber === completedDay) {
-      const next = await prisma.dailyLesson.findUnique({ where: { dayNumber: completedDay + 1 } });
+  async maybeAdvanceDay(userId: string, trackId: string, completedDay: number) {
+    const trackProgress = await trackService.ensureUserTrackProgress(userId, trackId);
+    if (trackProgress.currentDayNumber === completedDay) {
+      const next = await prisma.dailyLesson.findUnique({
+        where: { trackId_dayNumber: { trackId, dayNumber: completedDay + 1 } },
+      });
       if (next) {
-        await prisma.profile.update({
-          where: { userId },
+        await prisma.userTrackProgress.update({
+          where: { id: trackProgress.id },
           data: { currentDayNumber: completedDay + 1 },
         });
+        await trackService.syncProfileMirror(userId, trackId);
       }
     }
   },
@@ -214,12 +223,16 @@ export const progressEngine = {
     }
   },
 
-  async unlockAchievements(userId: string, streak: number) {
+  async unlockAchievements(userId: string, streak: number, trackId?: string) {
     const earned: string[] = [];
     if (streak >= 3) earned.push("streak-3");
     if (streak >= 7) earned.push("streak-7");
     const passedDays = await prisma.progress.count({
-      where: { userId, status: { in: ["PASSED", "EXCELLENT"] } },
+      where: {
+        userId,
+        status: { in: ["PASSED", "EXCELLENT"] },
+        ...(trackId ? { dailyLesson: { trackId } } : {}),
+      },
     });
     if (passedDays >= 1) earned.push("first-pass");
     if (passedDays >= 7) earned.push("week-complete");
@@ -234,38 +247,41 @@ export const progressEngine = {
     }
   },
 
-  async dashboard(userId: string) {
+  async dashboard(userId: string, trackId: string) {
+    const track = await prisma.track.findUniqueOrThrow({ where: { id: trackId } });
     const profile = await prisma.profile.findUniqueOrThrow({
       where: { userId },
-      include: { currentLevel: true, user: true },
+      include: { currentLevel: true, user: true, activeTrack: true },
     });
+    const trackProgress = await trackService.ensureUserTrackProgress(userId, trackId);
     const daily = await prisma.dailyLesson.findUnique({
-      where: { dayNumber: profile.currentDayNumber },
-      include: { phase: true, exercises: true, scenario: true, exam: true, lessons: true },
+      where: { trackId_dayNumber: { trackId, dayNumber: trackProgress.currentDayNumber } },
+      include: { phase: true, exercises: true, scenario: true, exam: true, lessons: true, track: true },
     });
     const progressRows = await prisma.progress.findMany({
-      where: { userId },
+      where: { userId, dailyLesson: { trackId } },
       include: { dailyLesson: { include: { phase: true } } },
       orderBy: { updatedAt: "desc" },
     });
     const skills = await prisma.userSkill.findMany({
-      where: { userId },
+      where: { userId, topic: { trackId } },
       include: { topic: true },
       orderBy: { scoreAvg: "asc" },
     });
     const reviewRows = await prisma.reviewQueue.findMany({
-      where: { userId, completed: false },
+      where: { userId, completed: false, topic: { trackId } },
       include: { topic: true },
       orderBy: { scheduledFor: "asc" },
     });
     const reviews = uniqueOpenReviews(reviewRows).slice(0, 8);
     const examHistory = await prisma.examAttempt.findMany({
-      where: { userId, completedAt: { not: null } },
+      where: { userId, completedAt: { not: null }, exam: { dailyLesson: { trackId } } },
       include: { exam: { include: { dailyLesson: true } } },
       orderBy: { completedAt: "desc" },
       take: 10,
     });
     const projects = await prisma.project.findMany({
+      where: { OR: [{ trackId }, { trackId: null }] },
       include: { attempts: { where: { userId } }, tasks: true },
       orderBy: { order: "asc" },
     });
@@ -275,21 +291,47 @@ export const progressEngine = {
     const settings = await prisma.settings.findUniqueOrThrow({ where: { id: "global" } });
     const analysis = await aiService.analyzeWeaknesses(
       skills.map((item) => ({ topic: item.topic.titleFa, score: item.scoreAvg })),
+      {
+        trackSlug: track.slug,
+        trackTitleEn: track.titleEn,
+      },
     );
-    const plan = await aiService.generatePersonalizedPlan({
-      currentDay: profile.currentDayNumber,
-      weakTopics: analysis.weakTopics,
-      strongTopics: analysis.strongTopics,
-    });
+    const plan = await aiService.generatePersonalizedPlan(
+      {
+        currentDay: trackProgress.currentDayNumber,
+        weakTopics: analysis.weakTopics,
+        strongTopics: analysis.strongTopics,
+      },
+      {
+        trackSlug: track.slug,
+        trackTitleEn: track.titleEn,
+        moduleSlug: daily?.phase.slug,
+        moduleTitleEn: daily?.phase.titleEn,
+      },
+    );
     const completedLessons = progressRows.filter((row) => row.theoryCompleted).length;
+    const trackExerciseIds = (
+      await prisma.exercise.findMany({
+        where: { dailyLesson: { trackId } },
+        select: { id: true },
+      })
+    ).map((item) => item.id);
     const completedExercises = await prisma.exerciseAttempt.count({
-      where: { userId, status: { in: ["PASSED", "EXCELLENT"] } },
+      where: { userId, status: { in: ["PASSED", "EXCELLENT"] }, exerciseId: { in: trackExerciseIds } },
     });
+    const trackScenarioIds = (
+      await prisma.productionScenario.findMany({
+        where: { dailyLesson: { trackId } },
+        select: { id: true },
+      })
+    ).map((item) => item.id);
     const completedScenarios = await prisma.scenarioAttempt.count({
-      where: { userId, status: { in: ["PASSED", "EXCELLENT"] } },
+      where: { userId, status: { in: ["PASSED", "EXCELLENT"] }, scenarioId: { in: trackScenarioIds } },
     });
-    const totalDays = await prisma.dailyLesson.count();
+    const totalDays = await prisma.dailyLesson.count({ where: { trackId } });
     return {
+      track,
+      trackProgress,
       profile,
       daily,
       progressRows,

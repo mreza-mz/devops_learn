@@ -7,6 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Track {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  titleFa     String
+  titleEn     String
+  descriptionFa String
+  order       Int      @unique
+  status      String   @default("APPROVED")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  phases      Phase[]
+  topics      Topic[]
+  dailyLessons DailyLesson[]
+  projects    Project[]
+  userProgress UserTrackProgress[]
+  activeProfiles Profile[] @relation("ActiveTrack")
+  interviewSessions InterviewSession[]
+}
+
 model User {
   id              String             @id @default(cuid())
   username        String             @unique
@@ -25,6 +44,8 @@ model User {
   labs            Lab[]
   achievements    UserAchievement[]
   aiRequests      AIRequest[]
+  trackProgress   UserTrackProgress[]
+  interviewSessions InterviewSession[]
 }
 
 model Profile {
@@ -34,6 +55,8 @@ model Profile {
   displayName      String
   currentLevelId   String?
   currentLevel     Level?    @relation(fields: [currentLevelId], references: [id])
+  activeTrackId    String?
+  activeTrack      Track?    @relation("ActiveTrack", fields: [activeTrackId], references: [id], onDelete: SetNull)
   currentDayNumber Int       @default(1)
   xp               Int       @default(0)
   streak           Int       @default(0)
@@ -42,17 +65,41 @@ model Profile {
   updatedAt        DateTime  @updatedAt
 }
 
+model UserTrackProgress {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId          String
+  track            Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  currentDayNumber Int       @default(1)
+  xp               Int       @default(0)
+  streak           Int       @default(0)
+  lastStudyDate    DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, trackId])
+  @@index([userId])
+  @@index([trackId])
+}
+
 model Phase {
   id            String        @id @default(cuid())
-  slug          String        @unique
+  trackId       String
+  track         Track         @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  slug          String
   titleFa       String
   titleEn       String
   descriptionFa String
-  order         Int           @unique
+  order         Int
   weekStart     Int
   weekEnd       Int
   topics        Topic[]
   dailyLessons  DailyLesson[]
+
+  @@unique([trackId, slug])
+  @@unique([trackId, order])
+  @@index([trackId])
 }
 
 model Level {
@@ -68,9 +115,11 @@ model Level {
 
 model Topic {
   id                String        @id @default(cuid())
+  trackId           String
+  track             Track         @relation(fields: [trackId], references: [id], onDelete: Cascade)
   phaseId           String
   phase             Phase         @relation(fields: [phaseId], references: [id], onDelete: Cascade)
-  slug              String        @unique
+  slug              String
   titleFa           String
   titleEn           String
   descriptionFa     String
@@ -82,7 +131,9 @@ model Topic {
   reviewItems       ReviewQueue[]
   questions         ExamQuestion[]
 
+  @@unique([trackId, slug])
   @@index([phaseId])
+  @@index([trackId])
 }
 
 model Lesson {
@@ -111,7 +162,9 @@ model Lesson {
 
 model DailyLesson {
   id               String               @id @default(cuid())
-  dayNumber        Int                  @unique
+  trackId          String
+  track            Track                @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  dayNumber        Int
   phaseId          String
   phase            Phase                @relation(fields: [phaseId], references: [id])
   titleFa          String
@@ -127,6 +180,10 @@ model DailyLesson {
   scenario         ProductionScenario?
   exam             Exam?
   progress         Progress[]
+
+  @@unique([trackId, dayNumber])
+  @@index([trackId])
+  @@index([phaseId])
 }
 
 model Exercise {
@@ -292,6 +349,8 @@ model Answer {
 
 model Project {
   id                String           @id @default(cuid())
+  trackId           String?
+  track             Track?           @relation(fields: [trackId], references: [id], onDelete: SetNull)
   slug              String           @unique
   titleFa           String
   descriptionMd     String
@@ -303,6 +362,8 @@ model Project {
   tasks             ProjectTask[]
   attempts          ProjectAttempt[]
   scenarios         ProductionScenario[]
+
+  @@index([trackId])
 }
 
 model ProjectTask {
@@ -488,6 +549,47 @@ model UserAchievement {
   earnedAt      DateTime    @default(now())
 
   @@id([userId, achievementId])
+}
+
+model InterviewSession {
+  id                      String            @id @default(cuid())
+  userId                  String
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId                 String
+  track                   Track             @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  mode                    String
+  status                  String            @default("IN_PROGRESS")
+  questionIdsJson         Json
+  currentIndex            Int               @default(0)
+  categoryScoresJson      Json?
+  overallScore            Float?
+  strengthsJson           Json?
+  weaknessesJson          Json?
+  recommendedLessonsJson  Json?
+  reportSummaryFa         String?
+  startedAt               DateTime          @default(now())
+  completedAt             DateTime?
+  answers                 InterviewAnswer[]
+
+  @@index([userId, trackId])
+  @@index([userId, status])
+}
+
+model InterviewAnswer {
+  id           String           @id @default(cuid())
+  sessionId    String
+  session      InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId   String
+  orderIndex   Int
+  answerText   String
+  score        Float
+  feedbackFa   String?
+  mistakesJson Json?
+  followUpFa   String?
+  createdAt    DateTime         @default(now())
+
+  @@unique([sessionId, orderIndex])
+  @@index([sessionId])
 }
 
 model Settings {

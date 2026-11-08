@@ -2,7 +2,7 @@ import { isAiConfigured } from "@/config/env";
 import { logger } from "@/lib/logger";
 import { AvalAIProvider } from "@/server/ai/avalai-provider";
 import { FallbackAIProvider } from "@/server/ai/fallback-provider";
-import type { AIProvider } from "@/server/ai/provider";
+import type { AIProvider, TrackAiContext } from "@/server/ai/provider";
 import {
   aiGradeResultSchema,
   generatedExamSchema,
@@ -37,32 +37,32 @@ async function withFallback<T>(
 }
 
 export const aiService = {
-  generateLesson(topic: string, dayNumber: number) {
+  generateLesson(topic: string, dayNumber: number, ctx?: TrackAiContext) {
     return withFallback(
-      (client) => client.generateLesson(topic, dayNumber),
+      (client) => client.generateLesson(topic, dayNumber, ctx),
       generatedLessonSchema,
-      () => fallback.generateLesson(topic, dayNumber),
+      () => fallback.generateLesson(topic, dayNumber, ctx),
     );
   },
-  generateExercise(topic: string, weakness?: string) {
+  generateExercise(topic: string, weakness?: string, ctx?: TrackAiContext) {
     return withFallback(
-      (client) => client.generateExercise(topic, weakness),
+      (client) => client.generateExercise(topic, weakness, ctx),
       generatedExerciseSchema,
-      () => fallback.generateExercise(topic, weakness),
+      () => fallback.generateExercise(topic, weakness, ctx),
     );
   },
-  generateScenario(topic: string) {
+  generateScenario(topic: string, ctx?: TrackAiContext) {
     return withFallback(
-      (client) => client.generateScenario(topic),
+      (client) => client.generateScenario(topic, ctx),
       generatedScenarioSchema,
-      () => fallback.generateScenario(topic),
+      () => fallback.generateScenario(topic, ctx),
     );
   },
-  generateExam(topic: string, count: number) {
+  generateExam(topic: string, count: number, ctx?: TrackAiContext) {
     return withFallback(
-      (client) => client.generateExam(topic, count),
+      (client) => client.generateExam(topic, count, ctx),
       generatedExamSchema,
-      () => fallback.generateExam(topic, count),
+      () => fallback.generateExam(topic, count, ctx),
     );
   },
   gradeAnswer(...args: Parameters<AIProvider["gradeAnswer"]>) {
@@ -86,11 +86,11 @@ export const aiService = {
       () => fallback.analyzeWeaknesses(...args),
     );
   },
-  generateReviewExercise(topic: string, previousPrompt?: string) {
+  generateReviewExercise(topic: string, previousPrompt?: string, ctx?: TrackAiContext) {
     return withFallback(
-      (client) => client.generateReviewExercise(topic, previousPrompt),
+      (client) => client.generateReviewExercise(topic, previousPrompt, ctx),
       generatedExerciseSchema,
-      () => fallback.generateReviewExercise(topic, previousPrompt),
+      () => fallback.generateReviewExercise(topic, previousPrompt, ctx),
     );
   },
   generatePersonalizedPlan(...args: Parameters<AIProvider["generatePersonalizedPlan"]>) {

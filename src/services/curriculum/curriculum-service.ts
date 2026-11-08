@@ -1,10 +1,10 @@
 import { curriculumRepository } from "@/repositories";
 
 export const curriculumService = {
-  getDay(dayNumber: number) {
-    return curriculumRepository.getDay(dayNumber);
+  getDay(trackId: string, dayNumber: number) {
+    return curriculumRepository.getDay(trackId, dayNumber);
   },
-  listTopics() {
-    return curriculumRepository.listTopics();
+  listTopics(trackId?: string) {
+    return curriculumRepository.listTopics(trackId);
   },
 };

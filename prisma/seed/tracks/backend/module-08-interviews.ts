@@ -1,0 +1,441 @@
+import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
+
+export const interviewDays: DaySeed[] = [
+  day({
+    dayNumber: 42,
+    phaseSlug: "mock-interviews",
+    titleFa: "مصاحبه: مبانی Go و هم‌زمانی",
+    objectiveFa:
+      "پاسخ شفاهی/نوشتاری ساخت‌یافته به سؤالات Mid/Senior دربارهٔ مدل حافظه، تایپ‌ها و concurrency در Go.",
+    topicSlugs: ["iv-go", "go-memory-model", "go-goroutines"],
+    lessons: [
+      goLesson({
+        slug: "iv-go-fundamentals-rubric",
+        topicSlug: "iv-go",
+        titleFa: "Rubrics مصاحبه مبانی Go",
+        objectiveFa: "بدانید مصاحبه‌کننده به چه عمقی انتظار دارد و چگونه پاسخ لایه‌ای بدهید.",
+        theoryMd: `## ساختار پاسخ خوب
+1. **تعریف یک‌خطی** — بدون طولانی‌گویی
+2. **مکانیزم داخلی** — کامپایلر، runtime، GC
+3. **trade-off** — عملکرد، خوانایی، امنیت نوع
+4. **مثال کوتاه** — کد یا سناریوی تولید
+
+## نمونه Q&A
+**سؤال:** escape analysis چیست؟
+**پاسخ نمونه:** کامپایلر تصمیم می‌گیرد متغیر روی stack بماند یا به heap برود. اگر pointer به محلی برگردد یا در goroutine دیگر زنده بماند → heap → فشار GC. برای hot path از تخصیص بی‌دلیل پرهیز می‌کنیم.
+
+## اشتباهات رایج
+- شروع با جزئیات بی‌ربط
+- نادیده گرفتن happens-before
+- ادعای «همیشه» بدون استثنا`,
+        practicalMd: `یک سؤال از لیست زیر را انتخاب کنید و در ۳ دقیقه پاسخ bullet بنویسید:
+- تفاوت slice و array
+- data race vs race condition
+- چرا map concurrent-safe نیست`,
+        exampleMd: `کلیدواژه‌های نمرهٔ کامل: **stack، heap، escape، -race، mutex، channel**`,
+      }),
+      goLesson({
+        slug: "iv-concurrency-drill",
+        topicSlug: "go-goroutines",
+        titleFa: "مصاحبه هم‌زمانی — عمق Senior",
+        objectiveFa: "worker pool، context cancel، و تشخیص leak را در قالب مصاحبه تمرین کنید.",
+        theoryMd: `## سؤالات پرتکرار
+| سؤال | نکات Rubric |
+|------|-------------|
+| buffered vs unbuffered channel | sync، ظرفیت، deadlock |
+| ctx در HTTP handler | timeout، cancel propagation |
+| goroutine leak | pprof، بلاک روی chan |
+
+## پاسخ نمونه worker pool
+goroutineهای ثابت + job channel + ctx برای shutdown؛ errgroup برای جمع‌آوری خطا.
+
+## سؤال پیگیری
+«اگر producer سریع‌تر از consumer باشد چه می‌کنید؟» → backpressure، bounded buffer، drop/metrics.`,
+        practicalMd: `روی کاغذ یک worker pool با ۳ worker و ctx cancel طراحی کنید.`,
+        exampleMd: `\`\`\`go
+ctx, cancel := context.WithCancel(context.Background())
+defer cancel()
+jobs := make(chan int, 8)
+\`\`\``,
+      }),
+    ],
+    exercises: [
+      noteExercise({
+        titleFa: "دریل: توضیح escape analysis",
+        topicSlug: "go-escape",
+        lessonSlug: "iv-go-fundamentals-rubric",
+        path: "/tmp/iv-day42-escape.txt",
+        mustContain: "heap",
+        instructionsMd: `در ۵ بولت پاسخ بنویسید: escape analysis چیست و چه ربطی به heap دارد؟`,
+        hints: [
+          { level: 1, textFa: "با تعریف یک‌خطی شروع کنید؛ بعد بگویید چه چیزی باعث escape می‌شود." },
+          { level: 2, textFa: "از کلمات stack، heap و GC در پاسخ استفاده کنید." },
+          { level: 3, textFa: `printf 'pointer return => heap\\n' > /tmp/iv-day42-escape.txt` },
+        ],
+      }),
+      noteExercise({
+        titleFa: "دریل: channel و happens-before",
+        topicSlug: "go-channels",
+        lessonSlug: "iv-concurrency-drill",
+        path: "/tmp/iv-day42-channel.txt",
+        mustContain: "happens-before",
+        instructionsMd: `تفاوت unbuffered channel از buffered را توضیح دهید و بگویید کدام عملیات happens-before می‌دهد.`,
+        hints: [
+          { level: 1, textFa: "unbuffered را به عنوان همگام‌سازی دو goroutine توصیف کنید." },
+          { level: 2, textFa: "واژهٔ happens-before را صریحاً در متن بیاورید." },
+          { level: 3, textFa: `echo 'send/recv on unbuffered gives happens-before' > /tmp/iv-day42-channel.txt` },
+        ],
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "یادداشت پنل — راند Go",
+      path: "/tmp/iv-day42-panel.txt",
+      mustContain: "depth",
+      incidentMd: `**مصاحبه‌کننده ۱:** می‌خواهم عمق runtime ببینم.
+**مصاحبه‌کننده ۲:** concurrency و shutdown graceful.
+**داوطلب:** باید لایه‌ای پاسخ دهد: تعریف → مکانیزم → trade-off → مثال.`,
+      symptomsMd: "پاسخ‌های سطحی یا فقط تعریف ویکی‌پدیا نمرهٔ Mid را نمی‌گیرند.",
+      rootCause: "نبود مثال تولیدی و نادیده گرفتن ابعاد observability",
+    }),
+    exam: {
+      titleFa: "آزمون روز ۴۲ — Go و concurrency",
+      questions: [
+        mc(
+          "کدام گزینه برای ایجاد happens-before بین دو goroutine درست‌تر است؟",
+          ["time.Sleep", "ارسال/دریافت روی channel بدون بافر", "افزایش int مشترک", "fmt.Println"],
+          "ارسال/دریافت روی channel بدون بافر",
+          "Channel unbuffered synchronization می‌دهد.",
+          "iv-go",
+        ),
+        sa("پرچم race detector در Go چیست؟", "go test -race", "یا go run -race", "iv-go"),
+        tf("map در Go برای concurrent read/write بدون sync امن است.", false, "نیاز به mutex یا sync.Map", "go-collections"),
+        mc(
+          "برای لغو کارهای پس‌زمینه در shutdown سرویس چه استفاده می‌شود؟",
+          ["فقط os.Exit", "context.Cancel و graceful shutdown", "panic", "init()"],
+          "context.Cancel و graceful shutdown",
+          "الگوی استاندارد production.",
+          "go-context",
+        ),
+        sa("یک علت رایج goroutine leak را نام ببرید.", "block on channel", "منتظر ماندن روی channel بدون reader", "iv-go"),
+      ],
+    },
+  }),
+  day({
+    dayNumber: 43,
+    phaseSlug: "mock-interviews",
+    titleFa: "مصاحبه: الگوریتم و دیتابیس",
+    objectiveFa: "پیچیدگی، ساختمان داده و تصمیم‌های دیتابیس را در قالب مصاحبه Backend بیان کنید.",
+    topicSlugs: ["iv-go", "algo-complexity", "db-indexes"],
+    lessons: [
+      goLesson({
+        slug: "iv-algorithms-rubric",
+        topicSlug: "algo-complexity",
+        titleFa: "Rubrics الگوریتم در مصاحبه",
+        objectiveFa: "الگوی clarify → brute → optimize → code → test را دنبال کنید.",
+        theoryMd: `## Rubric نمرهٔ کامل
+- state کردن فرض ورودی (مرتب؟ محدودیت n؟)
+- پیچیدگی زمانی/حافظه
+- پیاده‌سازی Go تمیز
+- edge case: خالی، تک‌عنصری
+
+## نمونه
+**Two-sum:** hash map O(n)؛ alternative دو pointer اگر مرتب باشد.
+
+## سؤال پیگیری
+«اگر حافظه محدود باشد؟»`,
+        practicalMd: `مسئلهٔ two-sum را بدون کد کامل، فقط با مراحل حل توضیح دهید.`,
+        exampleMd: `O(n) با map از complement استفاده می‌کند.`,
+      }),
+      goLesson({
+        slug: "iv-database-rubric",
+        topicSlug: "db-indexes",
+        titleFa: "Rubrics دیتابیس",
+        objectiveFa: "ایندکس، تراکنش و مقیاس‌پذیری را با زبان مصاحبه Senior توضیح دهید.",
+        theoryMd: `## محورهای سؤال
+- B-tree index، covering index
+- isolation level و anomaly
+- replication lag و read-your-writes
+- sharding vs vertical scale
+
+## پاسخ نمونه N+1
+ORM lazy load → query اضافه؛ حل: preload/join.
+
+## trade-off
+ایندکس زیاد → write کندتر.`,
+        practicalMd: `سناریوی «کندی لیست سفارش‌ها» را با فرض missing index تحلیل کنید.`,
+        exampleMd: `EXPLAIN ANALYZE برای اثبات sequential scan.`,
+      }),
+    ],
+    exercises: [
+      noteExercise({
+        titleFa: "دریل: پیچیدگی و ساختمان داده",
+        topicSlug: "algo-complexity",
+        lessonSlug: "iv-algorithms-rubric",
+        path: "/tmp/iv-day43-algo.txt",
+        mustContain: "O(n)",
+        instructionsMd: `برای جستجوی عضو در slice نامرتب و در map، پیچیدگی را مقایسه کنید و O(n) را در متن بیاورید.`,
+        hints: [
+          { level: 1, textFa: "slice linear scan؛ map تقریباً O(1) average." },
+          { level: 2, textFa: "حتماً O(n) برای slice ذکر شود." },
+          { level: 3, textFa: `echo 'slice lookup O(n)' > /tmp/iv-day43-algo.txt` },
+        ],
+      }),
+      noteExercise({
+        titleFa: "دریل: ایندکس و کوئری کند",
+        topicSlug: "db-indexes",
+        lessonSlug: "iv-database-rubric",
+        path: "/tmp/iv-day43-index.txt",
+        mustContain: "index",
+        instructionsMd: `چرا فیلتر روی ستون بدون index کند است؟ کلمهٔ index را در پاسخ بیاورید.`,
+        hints: [
+          { level: 1, textFa: "sequential scan vs index seek." },
+          { level: 2, textFa: "از composite index در WHERE + ORDER BY یاد کنید." },
+          { level: 3, textFa: `echo 'add btree index' > /tmp/iv-day43-index.txt` },
+        ],
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "یادداشت پنل — الگوریتم و SQL",
+      path: "/tmp/iv-day43-panel.txt",
+      mustContain: "trade-off",
+      incidentMd: `**پنل:** ابتدا ۲۰ دقیقه coding سبک، سپس deep dive روی کوئری کند در production.`,
+      symptomsMd: "داوطلب فقط کد می‌نویسد بدون تحلیل پیچیدگی یا plan برای index.",
+      rootCause: "نادیده گرفتن بخش communicate و trade-off",
+    }),
+    exam: {
+      titleFa: "آزمون روز ۴۳ — الگوریتم و DB",
+      questions: [
+        sa("پیچیدگی merge sort چیست؟", "O(n log n)", "مرتب‌سازی تقسیم‌و‌حل", "algo-complexity"),
+        mc(
+          "برای کوتاه‌ترین مسیر در گراف بدون وزن منفی معمولاً چه استفاده می‌شود؟",
+          ["DFS", "BFS", "Dijkstra", "Floyd"],
+          "BFS",
+          "لایه‌لایه از مبدأ.",
+          "algo-trees",
+        ),
+        tf("phantom read در سطح REPEATABLE READ هنوز ممکن است (بسته به DB).", true, "بسته به پیاده‌سازی RDBMS", "db-tx"),
+        sa("cache-aside در write چه کار می‌کند؟", "invalidate", "حذف یا به‌روز کردن cache", "db-cache"),
+        mc(
+          "N+1 معمولاً از کجا می‌آید؟",
+          ["یک JOIN بزرگ", "lazy loading در ORM", "index زیاد", "VACUUM"],
+          "lazy loading در ORM",
+          "حلقهٔ query در application layer.",
+          "db-sql",
+        ),
+        tf("sharding همیشه جایگزین replication برای read scale است.", false, "اهداف متفاوت", "db-cache"),
+      ],
+    },
+  }),
+  day({
+    dayNumber: 44,
+    phaseSlug: "mock-interviews",
+    titleFa: "مصاحبه: طراحی سیستم (URL Shortener)",
+    objectiveFa: "یک سؤال طراحی سیستم را از requirements تا deep dive (مثلاً کوتاه‌کننده URL) کامل جلو ببرید.",
+    topicSlugs: ["iv-system", "sd-scaling", "sd-fundamentals"],
+    lessons: [
+      goLesson({
+        slug: "iv-system-design-framework",
+        topicSlug: "sd-fundamentals",
+        titleFa: "چارچوب ۴۵ دقیقه‌ای System Design",
+        objectiveFa: "requirements، estimation، API، data model، scaling و failure را پوشش دهید.",
+        theoryMd: `## مراحل
+1. Functional / non-functional (latency, QPS, durability)
+2. Back-of-envelope: ترافیک، storage
+3. API و flow
+4. ذخیره‌سازی + cache
+5. bottlenecks و monitoring
+
+## URL Shortener — Rubric
+- encode: hash/base62 vs auto-increment + obfuscate
+- redirect 301/302
+- collision handling
+- analytics async`,
+        practicalMd: `برای ۱۰M URL/day حجم ذخیره را تخمین بزنید.`,
+        exampleMd: `Key: shortCode → longUrl mapping؛ TTL اختیاری.`,
+      }),
+      goLesson({
+        slug: "iv-url-shortener-deep",
+        topicSlug: "sd-scaling",
+        titleFa: "Deep dive: URL Shortener",
+        objectiveFa: "cache، DB sharding و hot key را در همان سؤال بحث کنید.",
+        theoryMd: `## پاسخ لایهٔ Senior
+- read-heavy → CDN/cache for redirect
+- write path: generate id در سرویس جدا
+- single point: DB → read replicas + cache invalidation
+
+## سؤال پیگیری پنل
+«اگر short code قابل حدس باشد؟» → entropy، rate limit، abuse detection.
+
+## ارتباط با rate limiter
+همان روز می‌توانید limiter را به عنوان follow-up طراحی کنید.`,
+        practicalMd: `diagram ساده client → API → cache → DB برای redirect بنویسید.`,
+        exampleMd: `302 برای آمار کلیک؛ 301 برای cache دائمی مرورگر.`,
+      }),
+    ],
+    exercises: [
+      noteExercise({
+        titleFa: "طراحی API کوتاه‌کننده",
+        topicSlug: "sd-fundamentals",
+        lessonSlug: "iv-url-shortener-deep",
+        path: "/tmp/iv-day44-api.txt",
+        mustContain: "POST",
+        instructionsMd: `دو endpoint اصلی (ایجاد لینک و redirect) را با متد HTTP مناسب لیست کنید؛ POST را ذکر کنید.`,
+        hints: [
+          { level: 1, textFa: "create نیاز به body دارد؛ redirect با GET." },
+          { level: 2, textFa: "POST /api/v1/links و GET /:code" },
+          { level: 3, textFa: `echo 'POST creates short link' > /tmp/iv-day44-api.txt` },
+        ],
+      }),
+      noteExercise({
+        titleFa: "تخمین ظرفیت",
+        topicSlug: "sd-scaling",
+        lessonSlug: "iv-system-design-framework",
+        path: "/tmp/iv-day44-scale.txt",
+        mustContain: "cache",
+        instructionsMd: `برای read-heavy بودن redirect، نقش cache را در یک پاراگراف کوتاه توضیح دهید.`,
+        hints: [
+          { level: 1, textFa: "اکثر ترافیک redirect است نه create." },
+          { level: 2, textFa: "Redis/Memcached جلوی DB." },
+          { level: 3, textFa: `echo 'redirect served from cache' > /tmp/iv-day44-scale.txt` },
+        ],
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "یادداشت پنل — System Design",
+      path: "/tmp/iv-day44-panel.txt",
+      mustContain: "estimate",
+      incidentMd: `**مدیر:** ۴۵ دقیقه روی URL shortener؛ در ۱۰ دقیقه آخر rate limiting را follow-up بپرسید.
+**نمرهٔ بالا:** back-of-envelope واضح + failure mode (DB down).`,
+      symptomsMd: "شروع مستقیم با Redis بدون requirements.",
+      rootCause: "نپرسیدن QPS و read/write ratio",
+    }),
+    exam: {
+      titleFa: "آزمون روز ۴۴ — طراحی سیستم",
+      questions: [
+        sa("در CAP durante partition کدام دو را trade-off می‌کنیم؟", "consistency availability", "CP یا AP", "sd-fundamentals"),
+        mc(
+          "برای جلوگیری از hot key در sharded cache چه کمک می‌کند؟",
+          ["یک shard", "replication + random salt در key", "حذف cache", "فقط SQL"],
+          "replication + random salt در key",
+          "توزیع بار خواندن.",
+          "sd-scaling",
+        ),
+        tf("301 redirect برای shortener همیشه بهتر از 302 است.", false, "302 برای analytics دقیق‌تر", "sd-fundamentals"),
+        sa("sliding window rate limiter معمولاً کجا state نگه می‌دارد؟", "redis", "memory/redis مشترک", "sd-reliability"),
+        mc(
+          "اولین قدم در system design interview چیست؟",
+          ["انتخاب Kafka", "جمع‌آوری requirements", "نوشتن کد Go", "انتخاب رنگ UI"],
+          "جمع‌آوری requirements",
+          "قبل از هر معماری.",
+          "iv-system",
+        ),
+      ],
+    },
+  }),
+  day({
+    dayNumber: 45,
+    phaseSlug: "mock-interviews",
+    titleFa: "Mock کامل Senior Backend + شبیه‌ساز درون‌برنامه",
+    objectiveFa:
+      "ترکیب Go، الگوریتم، DB، طراحی سیستم و backend production؛ آشنایی با مسیر «مصاحبه آزمایشی» در منو.",
+    topicSlugs: ["iv-full", "be-http", "iv-go"],
+    lessons: [
+      goLesson({
+        slug: "iv-full-mock-structure",
+        topicSlug: "iv-full",
+        titleFa: "ساختار مصاحبه کامل ۹۰ دقیقه‌ای",
+        objectiveFa: "توزیع زمانی بین coding، system design و behavioral فنی.",
+        theoryMd: `## بلوک‌های رایج
+| بلوک | مدت | محتوا |
+|------|-----|--------|
+| Coding | ۳۵–۴۵ دقیقه | Go + الگوریتم |
+| System | ۳۵ دقیقه | یک سوال عمیق |
+| Deep dive | ۱۰–۱۵ دقیقه | پروژهٔ گذشته / observability |
+
+## نمره‌دهی پنل
+ارتباط، عمق، pragmatic trade-off
+
+## استفاده از شبیه‌ساز
+منوی **مصاحبه آزمایشی** → حالت سریع (۱۰) یا استاندارد (۲۰) → پس از هر سؤال بازخورد AI → گزارش نهایی با درس پیشنهادی.`,
+        practicalMd: `یک بار حالت quick شبیه‌ساز را اجرا کنید و ضعف دسته‌ای را یادداشت کنید.`,
+        exampleMd: `پس از session روز ۴۳ یا ۴۴ را برای مرور پیشنهاد می‌دهد.`,
+      }),
+      goLesson({
+        slug: "iv-backend-production",
+        topicSlug: "be-http",
+        titleFa: "سؤالات Backend تولیدی",
+        objectiveFa: "auth، graceful shutdown، outbox و golden signals را در یک پاسخ coherent بیاورید.",
+        theoryMd: `## Rubric
+- JWT: access کوتاه، refresh امن
+- Shutdown: signal → drain → timeout
+- Outbox: consistency با broker
+- SRE: latency/traffic/errors/saturation
+
+## behavioral فنی
+«آخرین incident شما؟» → STAR با متریک قبل/بعد`,
+        practicalMd: `یک پاراگراف دربارهٔ graceful shutdown در Go HTTP server بنویسید.`,
+        exampleMd: `signal.Notify + Server.Shutdown(ctx)`,
+      }),
+    ],
+    exercises: [
+      noteExercise({
+        titleFa: "خودارزیابی پس از mock",
+        topicSlug: "iv-full",
+        lessonSlug: "iv-full-mock-structure",
+        path: "/tmp/iv-day45-self.txt",
+        mustContain: "simulator",
+        instructionsMd: `بنویسید از شبیه‌ساز درون‌برنامه (simulator) چگونه در هفتهٔ آینده استفاده می‌کنید.`,
+        hints: [
+          { level: 1, textFa: "حالت standard هفتگی یک بار." },
+          { level: 2, textFa: "کلمهٔ simulator را در متن بیاورید." },
+          { level: 3, textFa: `echo 'weekly simulator standard mode' > /tmp/iv-day45-self.txt` },
+        ],
+      }),
+      noteExercise({
+        titleFa: "دریل: golden signals",
+        topicSlug: "be-observability",
+        lessonSlug: "iv-backend-production",
+        path: "/tmp/iv-day45-signals.txt",
+        mustContain: "latency",
+        instructionsMd: `چهار golden signal را نام ببرید؛ latency حتماً باشد.`,
+        hints: [
+          { level: 1, textFa: "از Google SRE book." },
+          { level: 2, textFa: "latency, traffic, errors, saturation" },
+          { level: 3, textFa: `echo 'latency traffic errors saturation' > /tmp/iv-day45-signals.txt` },
+        ],
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "یادداشت پنل — راند نهایی Senior",
+      path: "/tmp/iv-day45-panel.txt",
+      mustContain: "senior",
+      incidentMd: `**پنل ترکیبی:** coding (Go concurrency) + طراحی notification system + سوال observability.
+انتظار: trade-off شفاف، ذکر monitoring و rollout plan.`,
+      symptomsMd: "پاسخ‌های پراکنده بدون جمع‌بندی.",
+      rootCause: "نبود تمرین timed mock",
+    }),
+    exam: {
+      titleFa: "آزمون روز ۴۵ — Mock کامل",
+      questions: [
+        mc(
+          "بهترین مسیر تمرین هفتگی با این پلتفرم؟",
+          ["فقط خواندن theory", "مصاحبه آزمایشی standard + مرور روز ضعیف", "رد کردن exam", "فقط scenario"],
+          "مصاحبه آزمایشی standard + مرور روز ضعیف",
+          "حلقهٔ بازخورد شبیه‌ساز + curriculum.",
+          "iv-full",
+        ),
+        sa("نام یک golden signal مربوط به خطا", "errors", "error rate", "be-observability"),
+        tf("outbox pattern برای exactly-once بدون idempotent consumer کافی است.", false, "معمولاً at-least-once", "be-architecture"),
+        mc(
+          "در JWT flow refresh token کجا باید امن ذخیره شود؟",
+          ["localStorage همیشه", "httpOnly cookie یا secure store", "URL query", "console.log"],
+          "httpOnly cookie یا secure store",
+          "کاهش XSS risk.",
+          "be-auth",
+        ),
+        sa("متد HTTP idempotent برای جایگزینی کامل resource؟", "PUT", "PUT/DELETE", "be-http"),
+        tf("مصاحبه senior فقط به کدنویسی محدود است.", false, "design و production مهارت هم هست", "iv-full"),
+      ],
+    },
+  }),
+];

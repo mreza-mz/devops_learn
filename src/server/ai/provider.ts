@@ -73,18 +73,45 @@ export type GradePracticalInput = {
   details: string[];
 };
 
+export type TrackAiContext = {
+  trackSlug?: string;
+  trackTitleEn?: string;
+  moduleSlug?: string;
+  moduleTitleEn?: string;
+  topicSlug?: string;
+  lessonSlug?: string;
+  language?: "fa" | "en";
+};
+
+export function formatTrackAiContext(ctx?: TrackAiContext): string {
+  if (!ctx) return "Track: DevOps/SRE (default).";
+  return [
+    `Track: ${ctx.trackTitleEn ?? ctx.trackSlug ?? "unknown"}`,
+    ctx.moduleTitleEn || ctx.moduleSlug ? `Module: ${ctx.moduleTitleEn ?? ctx.moduleSlug}` : null,
+    ctx.topicSlug ? `Topic: ${ctx.topicSlug}` : null,
+    ctx.lessonSlug ? `Lesson: ${ctx.lessonSlug}` : null,
+    `Learner language: ${ctx.language ?? "fa"} (technical terms and code stay in English)`,
+    "Teaching rule: use progressive hints; do not reveal full solutions immediately.",
+  ]
+    .filter(Boolean)
+    .join(". ");
+}
+
 export interface AIProvider {
-  generateLesson(topic: string, dayNumber: number): Promise<GeneratedLesson>;
-  generateExercise(topic: string, weakness?: string): Promise<GeneratedExercise>;
-  generateScenario(topic: string): Promise<GeneratedScenario>;
-  generateExam(topic: string, count: number): Promise<GeneratedExam>;
-  gradeAnswer(input: GradeAnswerInput): Promise<AiGradeResult>;
-  gradePracticalExercise(input: GradePracticalInput): Promise<AiGradeResult>;
-  analyzeWeaknesses(performances: { topic: string; score: number }[]): Promise<WeaknessAnalysis>;
-  generateReviewExercise(topic: string, previousPrompt?: string): Promise<GeneratedExercise>;
-  generatePersonalizedPlan(input: {
-    currentDay: number;
-    weakTopics: string[];
-    strongTopics: string[];
-  }): Promise<PersonalizedPlan>;
+  generateLesson(topic: string, dayNumber: number, ctx?: TrackAiContext): Promise<GeneratedLesson>;
+  generateExercise(topic: string, weakness?: string, ctx?: TrackAiContext): Promise<GeneratedExercise>;
+  generateScenario(topic: string, ctx?: TrackAiContext): Promise<GeneratedScenario>;
+  generateExam(topic: string, count: number, ctx?: TrackAiContext): Promise<GeneratedExam>;
+  gradeAnswer(input: GradeAnswerInput, ctx?: TrackAiContext): Promise<AiGradeResult>;
+  gradePracticalExercise(input: GradePracticalInput, ctx?: TrackAiContext): Promise<AiGradeResult>;
+  analyzeWeaknesses(performances: { topic: string; score: number }[], ctx?: TrackAiContext): Promise<WeaknessAnalysis>;
+  generateReviewExercise(topic: string, previousPrompt?: string, ctx?: TrackAiContext): Promise<GeneratedExercise>;
+  generatePersonalizedPlan(
+    input: {
+      currentDay: number;
+      weakTopics: string[];
+      strongTopics: string[];
+    },
+    ctx?: TrackAiContext,
+  ): Promise<PersonalizedPlan>;
 }

@@ -6,11 +6,13 @@ import type {
   GeneratedLesson,
   GeneratedScenario,
   PersonalizedPlan,
+  TrackAiContext,
   WeaknessAnalysis,
 } from "@/server/ai/provider";
 
 export class FallbackAIProvider implements AIProvider {
-  async generateLesson(topic: string, dayNumber: number): Promise<GeneratedLesson> {
+  async generateLesson(topic: string, dayNumber: number, ctx?: TrackAiContext): Promise<GeneratedLesson> {
+    void ctx;
     return {
       titleFa: `مرور ${topic}`,
       objectiveFa: `آشنایی بیشتر با ${topic} در روز ${dayNumber}`,
@@ -21,7 +23,8 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async generateExercise(topic: string, weakness?: string): Promise<GeneratedExercise> {
+  async generateExercise(topic: string, weakness?: string, ctx?: TrackAiContext): Promise<GeneratedExercise> {
+    void ctx;
     return {
       titleFa: `تمرین مرور ${topic}`,
       instructionsMd: `یک فایل به نام /tmp/review-${topic}.txt بسازید و داخل آن نام موضوع را بنویسید.${weakness ? ` تمرکز: ${weakness}` : ""}`,
@@ -37,7 +40,8 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async generateScenario(topic: string): Promise<GeneratedScenario> {
+  async generateScenario(topic: string, ctx?: TrackAiContext): Promise<GeneratedScenario> {
+    void ctx;
     return {
       titleFa: `سناریوی آفلاین ${topic}`,
       incidentMd: "سرویس کند شده است. علت را با ابزارهای استاندارد بررسی کنید.",
@@ -51,7 +55,8 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async generateExam(topic: string, count: number): Promise<GeneratedExam> {
+  async generateExam(topic: string, count: number, ctx?: TrackAiContext): Promise<GeneratedExam> {
+    void ctx;
     return {
       titleFa: `آزمون مرور ${topic}`,
       questions: Array.from({ length: count }, (_, index) => ({
@@ -67,12 +72,16 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async gradeAnswer(input: {
-    promptFa: string;
-    expected: string;
-    response: string;
-    type: string;
-  }): Promise<AiGradeResult> {
+  async gradeAnswer(
+    input: {
+      promptFa: string;
+      expected: string;
+      response: string;
+      type: string;
+    },
+    ctx?: TrackAiContext,
+  ): Promise<AiGradeResult> {
+    void ctx;
     const normalized = normalize(input.response);
     const expected = normalize(input.expected);
     const correct =
@@ -88,12 +97,16 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async gradePracticalExercise(input: {
-    instructionsMd: string;
-    validationPassed: boolean;
-    scorePercent: number;
-    details: string[];
-  }): Promise<AiGradeResult> {
+  async gradePracticalExercise(
+    input: {
+      instructionsMd: string;
+      validationPassed: boolean;
+      scorePercent: number;
+      details: string[];
+    },
+    ctx?: TrackAiContext,
+  ): Promise<AiGradeResult> {
+    void ctx;
     return {
       score: input.scorePercent,
       feedbackFa: input.validationPassed
@@ -105,7 +118,11 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async analyzeWeaknesses(performances: { topic: string; score: number }[]): Promise<WeaknessAnalysis> {
+  async analyzeWeaknesses(
+    performances: { topic: string; score: number }[],
+    ctx?: TrackAiContext,
+  ): Promise<WeaknessAnalysis> {
+    void ctx;
     const weakTopics = performances.filter((item) => item.score < 0.6).map((item) => item.topic);
     const strongTopics = performances.filter((item) => item.score >= 0.85).map((item) => item.topic);
     return {
@@ -118,15 +135,23 @@ export class FallbackAIProvider implements AIProvider {
     };
   }
 
-  async generateReviewExercise(topic: string, previousPrompt?: string): Promise<GeneratedExercise> {
-    return this.generateExercise(topic, previousPrompt ? `variation of ${previousPrompt}` : undefined);
+  async generateReviewExercise(
+    topic: string,
+    previousPrompt?: string,
+    ctx?: TrackAiContext,
+  ): Promise<GeneratedExercise> {
+    return this.generateExercise(topic, previousPrompt ? `variation of ${previousPrompt}` : undefined, ctx);
   }
 
-  async generatePersonalizedPlan(input: {
-    currentDay: number;
-    weakTopics: string[];
-    strongTopics: string[];
-  }): Promise<PersonalizedPlan> {
+  async generatePersonalizedPlan(
+    input: {
+      currentDay: number;
+      weakTopics: string[];
+      strongTopics: string[];
+    },
+    ctx?: TrackAiContext,
+  ): Promise<PersonalizedPlan> {
+    void ctx;
     return {
       focusTopics: input.weakTopics,
       nextDaySuggestionFa: `پس از تثبیت موضوعات ضعیف، به روز ${input.currentDay + 1} بروید.`,

@@ -1,16 +1,26 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hashPassword } from "../../src/server/auth/password";
-import { phases, levels } from "./curriculum";
-import { days as day1 } from "./day1";
-import { extraDays } from "./days-rest";
-import { gitDockerDays } from "./days-git-docker";
-import { cicdDays } from "./days-cicd";
-import { k8sDays } from "./days-k8s";
-import { iacDays } from "./days-iac";
-import { obsDays } from "./days-obs";
-import { sreDays } from "./days-sre";
-import { platformDays } from "./days-platform";
+import { phases, levels } from "./tracks/devops/curriculum";
+import { days as day1 } from "./tracks/devops/day1";
+import { extraDays } from "./tracks/devops/days-rest";
+import { gitDockerDays } from "./tracks/devops/days-git-docker";
+import { cicdDays } from "./tracks/devops/days-cicd";
+import { k8sDays } from "./tracks/devops/days-k8s";
+import { iacDays } from "./tracks/devops/days-iac";
+import { obsDays } from "./tracks/devops/days-obs";
+import { sreDays } from "./tracks/devops/days-sre";
+import { platformDays } from "./tracks/devops/days-platform";
+import { backendPhases } from "./tracks/backend/curriculum";
+import { goFundamentalsDays } from "./tracks/backend/module-01-go-fundamentals";
+import { goConcurrencyDays } from "./tracks/backend/module-02-concurrency";
+import { dsaDays } from "./tracks/backend/module-03-dsa";
+import { problemSolvingDays } from "./tracks/backend/module-04-problem-solving";
+import { databaseDays } from "./tracks/backend/module-05-database";
+import { systemDesignDays } from "./tracks/backend/module-06-system-design";
+import { backendGoDays } from "./tracks/backend/module-07-backend-go";
+import { interviewDays } from "./tracks/backend/module-08-interviews";
 import type { DaySeed } from "./types";
+import { TRACK_META, TRACK_SLUGS } from "../../src/config/tracks";
 
 const prisma = new PrismaClient();
 
@@ -18,84 +28,102 @@ function withLinuxPhase<T extends Omit<DaySeed, "phaseSlug">>(day: T): DaySeed {
   return { ...day, phaseSlug: "linux-networking" };
 }
 
-async function main() {
-  const adminPassword = await hashPassword(process.env.AUTH_PASSWORD_ADMIN ?? "admin123");
-  const learnerPassword = await hashPassword(process.env.AUTH_PASSWORD_LEARNER ?? "learner123");
-
-  await prisma.settings.upsert({
-    where: { id: "global" },
-    update: {},
-    create: { id: "global" },
+async function upsertTrack(slug: string) {
+  const meta = TRACK_META[slug as keyof typeof TRACK_META];
+  return prisma.track.upsert({
+    where: { slug },
+    update: {
+      titleFa: meta.titleFa,
+      titleEn: meta.titleEn,
+      descriptionFa: meta.descriptionFa,
+      order: meta.order,
+      status: "APPROVED",
+    },
+    create: {
+      id: slug === TRACK_SLUGS.DEVOPS_SRE ? "track_devops_sre" : slug === TRACK_SLUGS.BACKEND_GO ? "track_backend_go" : undefined,
+      slug,
+      titleFa: meta.titleFa,
+      titleEn: meta.titleEn,
+      descriptionFa: meta.descriptionFa,
+      order: meta.order,
+      status: "APPROVED",
+    },
   });
+}
 
-  const levelRecords = [];
-  for (const level of levels) {
-    const row = await prisma.level.upsert({
-      where: { slug: level.slug },
-      update: {
-        titleFa: level.titleFa,
-        titleEn: level.titleEn,
-        order: level.order,
-        minXp: level.minXp,
-        requirements: level.requirements,
-      },
-      create: {
-        slug: level.slug,
-        titleFa: level.titleFa,
-        titleEn: level.titleEn,
-        order: level.order,
-        minXp: level.minXp,
-        requirements: level.requirements,
-      },
+type PhaseSeed = {
+  slug: string;
+  titleFa: string;
+  titleEn: string;
+  descriptionFa: string;
+  order: number;
+  weekStart: number;
+  weekEnd: number;
+  topics: readonly (readonly [string, string, string] | [string, string, string])[];
+};
+
+async function seedPhasesAndTopics(
+  trackId: string,
+  phaseDefs: readonly PhaseSeed[],
+  topicBySlug: Map<string, string>,
+  phaseBySlug: Map<string, string>,
+) {
+  for (const phase of phaseDefs) {
+    const existing = await prisma.phase.findUnique({
+      where: { trackId_slug: { trackId, slug: phase.slug } },
     });
-    levelRecords.push(row);
-  }
-
-  const topicBySlug = new Map<string, string>();
-  const phaseBySlug = new Map<string, string>();
-
-  for (const phase of phases) {
-    const row = await prisma.phase.upsert({
-      where: { slug: phase.slug },
-      update: {
-        titleFa: phase.titleFa,
-        titleEn: phase.titleEn,
-        descriptionFa: phase.descriptionFa,
-        order: phase.order,
-        weekStart: phase.weekStart,
-        weekEnd: phase.weekEnd,
-      },
-      create: {
-        slug: phase.slug,
-        titleFa: phase.titleFa,
-        titleEn: phase.titleEn,
-        descriptionFa: phase.descriptionFa,
-        order: phase.order,
-        weekStart: phase.weekStart,
-        weekEnd: phase.weekEnd,
-      },
-    });
+    const row = existing
+      ? await prisma.phase.update({
+          where: { id: existing.id },
+          data: {
+            titleFa: phase.titleFa,
+            titleEn: phase.titleEn,
+            descriptionFa: phase.descriptionFa,
+            order: phase.order,
+            weekStart: phase.weekStart,
+            weekEnd: phase.weekEnd,
+          },
+        })
+      : await prisma.phase.create({
+          data: {
+            trackId,
+            slug: phase.slug,
+            titleFa: phase.titleFa,
+            titleEn: phase.titleEn,
+            descriptionFa: phase.descriptionFa,
+            order: phase.order,
+            weekStart: phase.weekStart,
+            weekEnd: phase.weekEnd,
+          },
+        });
     phaseBySlug.set(phase.slug, row.id);
     for (const [index, topic] of phase.topics.entries()) {
       const [slug, titleFa, titleEn] = topic;
-      const topicRow = await prisma.topic.upsert({
-        where: { slug },
-        update: {
-          titleFa,
-          titleEn,
-          descriptionFa: `موضوع ${titleFa} در فاز ${phase.titleFa}`,
-          order: index + 1,
-          phaseId: row.id,
-        },
-        create: {
-          slug,
-          titleFa,
-          titleEn,
-          descriptionFa: `موضوع ${titleFa} در فاز ${phase.titleFa}`,
-          order: index + 1,
-          phaseId: row.id,
-        },
+      const existingTopic = await prisma.topic.findUnique({
+        where: { trackId_slug: { trackId, slug } },
       });
+      const topicRow = existingTopic
+        ? await prisma.topic.update({
+            where: { id: existingTopic.id },
+            data: {
+              titleFa,
+              titleEn,
+              descriptionFa: `موضوع ${titleFa} در فاز ${phase.titleFa}`,
+              order: index + 1,
+              phaseId: row.id,
+            },
+          })
+        : await prisma.topic.create({
+            data: {
+              trackId,
+              slug,
+              titleFa,
+              titleEn,
+              descriptionFa: `موضوع ${titleFa} در فاز ${phase.titleFa}`,
+              order: index + 1,
+              phaseId: row.id,
+            },
+          });
       topicBySlug.set(slug, topicRow.id);
       await prisma.skill.upsert({
         where: { slug: `${slug}-core` },
@@ -104,88 +132,40 @@ async function main() {
       });
     }
   }
+}
 
-  const admin = await prisma.user.upsert({
-    where: { username: process.env.AUTH_USERNAME_ADMIN ?? "admin" },
-    update: { passwordHash: adminPassword, role: "ADMIN" },
-    create: {
-      username: process.env.AUTH_USERNAME_ADMIN ?? "admin",
-      passwordHash: adminPassword,
-      role: "ADMIN",
-      profile: {
-        create: {
-          displayName: "مدیر",
-          currentLevelId: levelRecords[0]?.id,
-          currentDayNumber: 1,
-        },
-      },
-    },
-  });
-  await prisma.profile.upsert({
-    where: { userId: admin.id },
-    update: { displayName: "مدیر", currentLevelId: levelRecords[0]?.id },
-    create: {
-      userId: admin.id,
-      displayName: "مدیر",
-      currentLevelId: levelRecords[0]?.id,
-    },
-  });
-
-  const learner = await prisma.user.upsert({
-    where: { username: process.env.AUTH_USERNAME_LEARNER ?? "learner" },
-    update: { passwordHash: learnerPassword, role: "LEARNER" },
-    create: {
-      username: process.env.AUTH_USERNAME_LEARNER ?? "learner",
-      passwordHash: learnerPassword,
-      role: "LEARNER",
-    },
-  });
-  await prisma.profile.upsert({
-    where: { userId: learner.id },
-    update: { currentLevelId: levelRecords[0]?.id, currentDayNumber: 1 },
-    create: {
-      userId: learner.id,
-      displayName: "یادگیر",
-      currentLevelId: levelRecords[0]?.id,
-      currentDayNumber: 1,
-    },
-  });
-
-  const linuxPhaseId = phaseBySlug.get("linux-networking");
-  if (!linuxPhaseId) {
-    throw new Error("linux phase missing");
-  }
-
-  const allDays: DaySeed[] = [
-    ...day1.map(withLinuxPhase),
-    ...extraDays.map(withLinuxPhase),
-    ...gitDockerDays,
-    ...cicdDays,
-    ...k8sDays,
-    ...iacDays,
-    ...obsDays,
-    ...sreDays,
-    ...platformDays,
-  ];
-
+async function seedDays(
+  trackId: string,
+  allDays: DaySeed[],
+  phaseBySlug: Map<string, string>,
+  topicBySlug: Map<string, string>,
+  fallbackPhaseId: string,
+) {
   for (const day of allDays) {
-    const phaseId = phaseBySlug.get(day.phaseSlug) ?? linuxPhaseId;
-    const daily = await prisma.dailyLesson.upsert({
-      where: { dayNumber: day.dayNumber },
-      update: {
-        titleFa: day.titleFa,
-        objectiveFa: day.objectiveFa,
-        phaseId,
-        status: "APPROVED",
-      },
-      create: {
-        dayNumber: day.dayNumber,
-        titleFa: day.titleFa,
-        objectiveFa: day.objectiveFa,
-        phaseId,
-        status: "APPROVED",
-      },
+    const phaseId = phaseBySlug.get(day.phaseSlug) ?? fallbackPhaseId;
+    const existing = await prisma.dailyLesson.findUnique({
+      where: { trackId_dayNumber: { trackId, dayNumber: day.dayNumber } },
     });
+    const daily = existing
+      ? await prisma.dailyLesson.update({
+          where: { id: existing.id },
+          data: {
+            titleFa: day.titleFa,
+            objectiveFa: day.objectiveFa,
+            phaseId,
+            status: "APPROVED",
+          },
+        })
+      : await prisma.dailyLesson.create({
+          data: {
+            trackId,
+            dayNumber: day.dayNumber,
+            titleFa: day.titleFa,
+            objectiveFa: day.objectiveFa,
+            phaseId,
+            status: "APPROVED",
+          },
+        });
 
     await prisma.lesson.deleteMany({ where: { dailyLessonId: daily.id } });
     for (const [index, lesson] of day.lessons.entries()) {
@@ -273,6 +253,153 @@ async function main() {
       });
     }
   }
+}
+
+async function main() {
+  const adminPassword = await hashPassword(process.env.AUTH_PASSWORD_ADMIN ?? "admin123");
+  const learnerPassword = await hashPassword(process.env.AUTH_PASSWORD_LEARNER ?? "learner123");
+
+  await prisma.settings.upsert({
+    where: { id: "global" },
+    update: {},
+    create: { id: "global" },
+  });
+
+  const devopsTrack = await upsertTrack(TRACK_SLUGS.DEVOPS_SRE);
+  const backendTrack = await upsertTrack(TRACK_SLUGS.BACKEND_GO);
+
+  const levelRecords = [];
+  for (const level of levels) {
+    const row = await prisma.level.upsert({
+      where: { slug: level.slug },
+      update: {
+        titleFa: level.titleFa,
+        titleEn: level.titleEn,
+        order: level.order,
+        minXp: level.minXp,
+        requirements: level.requirements,
+      },
+      create: {
+        slug: level.slug,
+        titleFa: level.titleFa,
+        titleEn: level.titleEn,
+        order: level.order,
+        minXp: level.minXp,
+        requirements: level.requirements,
+      },
+    });
+    levelRecords.push(row);
+  }
+
+  const topicBySlug = new Map<string, string>();
+  const phaseBySlug = new Map<string, string>();
+  await seedPhasesAndTopics(devopsTrack.id, phases as readonly PhaseSeed[], topicBySlug, phaseBySlug);
+
+  const backendTopicBySlug = new Map<string, string>();
+  const backendPhaseBySlug = new Map<string, string>();
+  await seedPhasesAndTopics(backendTrack.id, backendPhases as readonly PhaseSeed[], backendTopicBySlug, backendPhaseBySlug);
+
+  const admin = await prisma.user.upsert({
+    where: { username: process.env.AUTH_USERNAME_ADMIN ?? "admin" },
+    update: { passwordHash: adminPassword, role: "ADMIN" },
+    create: {
+      username: process.env.AUTH_USERNAME_ADMIN ?? "admin",
+      passwordHash: adminPassword,
+      role: "ADMIN",
+      profile: {
+        create: {
+          displayName: "مدیر",
+          currentLevelId: levelRecords[0]?.id,
+          currentDayNumber: 1,
+          activeTrackId: devopsTrack.id,
+        },
+      },
+    },
+  });
+  await prisma.profile.upsert({
+    where: { userId: admin.id },
+    update: {
+      displayName: "مدیر",
+      currentLevelId: levelRecords[0]?.id,
+      activeTrackId: devopsTrack.id,
+    },
+    create: {
+      userId: admin.id,
+      displayName: "مدیر",
+      currentLevelId: levelRecords[0]?.id,
+      activeTrackId: devopsTrack.id,
+    },
+  });
+
+  const learner = await prisma.user.upsert({
+    where: { username: process.env.AUTH_USERNAME_LEARNER ?? "learner" },
+    update: { passwordHash: learnerPassword, role: "LEARNER" },
+    create: {
+      username: process.env.AUTH_USERNAME_LEARNER ?? "learner",
+      passwordHash: learnerPassword,
+      role: "LEARNER",
+    },
+  });
+  await prisma.profile.upsert({
+    where: { userId: learner.id },
+    update: {
+      currentLevelId: levelRecords[0]?.id,
+      currentDayNumber: 1,
+      activeTrackId: devopsTrack.id,
+    },
+    create: {
+      userId: learner.id,
+      displayName: "یادگیر",
+      currentLevelId: levelRecords[0]?.id,
+      currentDayNumber: 1,
+      activeTrackId: devopsTrack.id,
+    },
+  });
+
+  for (const user of [admin, learner]) {
+    for (const track of [devopsTrack, backendTrack]) {
+      await prisma.userTrackProgress.upsert({
+        where: { userId_trackId: { userId: user.id, trackId: track.id } },
+        update: {},
+        create: { userId: user.id, trackId: track.id, currentDayNumber: 1 },
+      });
+    }
+  }
+
+  const linuxPhaseId = phaseBySlug.get("linux-networking");
+  if (!linuxPhaseId) {
+    throw new Error("linux phase missing");
+  }
+
+  const devopsDays: DaySeed[] = [
+    ...day1.map(withLinuxPhase),
+    ...extraDays.map(withLinuxPhase),
+    ...gitDockerDays,
+    ...cicdDays,
+    ...k8sDays,
+    ...iacDays,
+    ...obsDays,
+    ...sreDays,
+    ...platformDays,
+  ];
+
+  await seedDays(devopsTrack.id, devopsDays, phaseBySlug, topicBySlug, linuxPhaseId);
+
+  const goPhaseId = backendPhaseBySlug.get("go-fundamentals");
+  if (!goPhaseId) {
+    throw new Error("go fundamentals phase missing");
+  }
+  const backendDays: DaySeed[] = [
+    ...goFundamentalsDays,
+    ...goConcurrencyDays,
+    ...dsaDays,
+    ...problemSolvingDays,
+    ...databaseDays,
+    ...systemDesignDays,
+    ...backendGoDays,
+    ...interviewDays,
+  ];
+  await seedDays(backendTrack.id, backendDays, backendPhaseBySlug, backendTopicBySlug, goPhaseId);
 
   const projects = [
     {
@@ -281,11 +408,7 @@ async function main() {
       descriptionMd: "کاربر عملیاتی، مجوزها، لاگ و سلامت منابع را روی یک سرور لینوکس پیاده کنید.",
       order: 1,
       minLevelOrder: 1,
-      tasks: [
-        "کاربر deploy با شل bash",
-        "دایرکتوری /opt/app با مجوز مناسب",
-        "فایل سلامت در /tmp/health.txt",
-      ],
+      tasks: ["کاربر deploy با شل bash", "دایرکتوری /opt/app با مجوز مناسب", "فایل سلامت در /tmp/health.txt"],
     },
     {
       slug: "dockerized-app",
@@ -335,18 +458,8 @@ async function main() {
       order: 7,
       isFinal: true,
       minLevelOrder: 7,
-      injectedFailures: [
-        "CrashLoopBackOff on api",
-        "broken ingress path",
-        "disk fill on loki",
-        "failed health check",
-      ],
-      tasks: [
-        "پایپ‌لاین سبز",
-        "استقرار کامل مشاهده‌پذیری",
-        "رفع شکست‌های تزریق‌شده",
-        "تمرین DR",
-      ],
+      injectedFailures: ["CrashLoopBackOff on api", "broken ingress path", "disk fill on loki", "failed health check"],
+      tasks: ["پایپ‌لاین سبز", "استقرار کامل مشاهده‌پذیری", "رفع شکست‌های تزریق‌شده", "تمرین DR"],
     },
   ];
 
@@ -359,6 +472,7 @@ async function main() {
         order: project.order,
         isFinal: Boolean(project.isFinal),
         minLevelOrder: project.minLevelOrder,
+        trackId: devopsTrack.id,
         injectedFailures: "injectedFailures" in project ? project.injectedFailures : undefined,
       },
       create: {
@@ -368,6 +482,7 @@ async function main() {
         order: project.order,
         isFinal: Boolean(project.isFinal),
         minLevelOrder: project.minLevelOrder,
+        trackId: devopsTrack.id,
         injectedFailures: "injectedFailures" in project ? project.injectedFailures : undefined,
       },
     });
@@ -399,7 +514,12 @@ async function main() {
     });
   }
 
-  console.log("Seed completed", { topics: topicBySlug.size, days: allDays.length });
+  console.log("Seed completed", {
+    devopsDays: devopsDays.length,
+    backendDays: backendDays.length,
+    devopsTopics: topicBySlug.size,
+    backendTopics: backendTopicBySlug.size,
+  });
 }
 
 main()

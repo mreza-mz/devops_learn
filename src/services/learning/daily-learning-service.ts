@@ -8,12 +8,14 @@ import { CONTENT_STATUS } from "@/config/constants";
 import { aiService } from "@/server/ai/service";
 import { generatedExerciseSchema } from "@/validators/ai";
 import { validationSpecSchema } from "@/services/validation/validation-engine";
+import { trackService } from "@/services/tracks/track-service";
 
 export const learningService = {
-  async getDay(dayNumber: number) {
+  async getDay(trackId: string, dayNumber: number) {
     const daily = await prisma.dailyLesson.findUnique({
-      where: { dayNumber },
+      where: { trackId_dayNumber: { trackId, dayNumber } },
       include: {
+        track: true,
         phase: true,
         lessons: { include: { topic: true }, orderBy: { order: "asc" } },
         exercises: { orderBy: { createdAt: "asc" } },
@@ -27,18 +29,26 @@ export const learningService = {
     return daily;
   },
 
-  async listDaysWithProgress(userId: string) {
-    const profile = await prisma.profile.findUniqueOrThrow({ where: { userId } });
+  async getDayBySlug(trackSlug: string, dayNumber: number) {
+    const track = await trackService.getBySlug(trackSlug);
+    return this.getDay(track.id, dayNumber);
+  },
+
+  async listDaysWithProgress(userId: string, trackId: string) {
+    const trackProgress = await trackService.getTrackProgress(userId, trackId);
     const days = await prisma.dailyLesson.findMany({
+      where: { trackId },
       orderBy: { dayNumber: "asc" },
       include: { phase: true },
     });
-    const progressRows = await prisma.progress.findMany({ where: { userId } });
+    const progressRows = await prisma.progress.findMany({
+      where: { userId, dailyLesson: { trackId } },
+    });
     const byLessonId = new Map(progressRows.map((row) => [row.dailyLessonId, row]));
 
     const mapped = days.map((day) => {
       const progress = byLessonId.get(day.id) ?? null;
-      const unlocked = day.dayNumber <= profile.currentDayNumber;
+      const unlocked = day.dayNumber <= trackProgress.currentDayNumber;
       return {
         id: day.id,
         dayNumber: day.dayNumber,
@@ -50,7 +60,7 @@ export const learningService = {
         phaseTitleEn: day.phase.titleEn,
         phaseOrder: day.phase.order,
         unlocked,
-        isCurrent: day.dayNumber === profile.currentDayNumber,
+        isCurrent: day.dayNumber === trackProgress.currentDayNumber,
         status: progress?.status ?? null,
         totalScore: progress?.totalScore ?? 0,
         bestScore: progress?.bestScore ?? 0,
@@ -93,14 +103,14 @@ export const learningService = {
     const phases = [...phaseMap.values()].sort((a, b) => a.order - b.order);
 
     return {
-      currentDayNumber: profile.currentDayNumber,
+      currentDayNumber: trackProgress.currentDayNumber,
       days: mapped,
       phases,
     };
   },
 
-  async completeTheory(userId: string, dayNumber: number) {
-    const daily = await this.getDay(dayNumber);
+  async completeTheory(userId: string, trackId: string, dayNumber: number) {
+    const daily = await this.getDay(trackId, dayNumber);
     await progressEngine.markTheoryComplete(userId, daily.id, daily.theoryWeight);
     for (const lesson of daily.lessons) {
       await progressEngine.recordTopicScore(userId, lesson.topicId, 80);
@@ -157,11 +167,20 @@ export const learningService = {
   },
 
   async createReviewExercise(userId: string, topicId: string) {
-    const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      include: { track: true, phase: true },
+    });
     if (!topic) {
       throw errors.notFound("موضوع");
     }
-    const generated = await aiService.generateReviewExercise(topic.slug);
+    const generated = await aiService.generateReviewExercise(topic.slug, undefined, {
+      trackSlug: topic.track.slug,
+      trackTitleEn: topic.track.titleEn,
+      moduleSlug: topic.phase.slug,
+      moduleTitleEn: topic.phase.titleEn,
+      topicSlug: topic.slug,
+    });
     const parsed = generatedExerciseSchema.parse(generated);
     const validation = validationSpecSchema.parse(parsed.validation);
     const settings = await prisma.settings.findUniqueOrThrow({ where: { id: "global" } });
