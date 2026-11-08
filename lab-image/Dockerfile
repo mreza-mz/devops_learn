@@ -1,8 +1,19 @@
-FROM ubuntu:24.04
+# Both can be overridden for networks where Docker Hub or the Ubuntu archive is
+# blocked, e.g. from Iran:
+#   docker build --build-arg BASE_IMAGE=docker.arvancloud.ir/library/ubuntu:24.04 \
+#                --build-arg APT_MIRROR=https://mirror-linux.runflare.com/ubuntu ./lab-image
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
 
+ARG APT_MIRROR=
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN if [ -n "$APT_MIRROR" ]; then \
+      sed -i -e "s|http://archive.ubuntu.com/ubuntu|$APT_MIRROR|g" \
+             -e "s|http://security.ubuntu.com/ubuntu|$APT_MIRROR|g" \
+             /etc/apt/sources.list.d/ubuntu.sources; \
+    fi \
+    && apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
     coreutils \

@@ -60,6 +60,7 @@ Core Go days end in a **real coding lab**: starter code and tests are written to
 - Lab sources: `prisma/seed/tracks/backend/labs/<name>/` (`*.go` starter, `*_test.go` spec, `solution/` reference — never copied into the sandbox)
 - Add a lab: create the folder, wire it with `goLab()` in the module file, then run `npm run labs:verify` and `npm test`
 - Labs run offline (`--network none`): standard library only
+- If `npm run lab:build` fails with `403 Forbidden` from Docker Hub (common in Iran), add a registry mirror in Docker Desktop → Settings → Docker Engine, e.g. `"registry-mirrors": ["https://docker.arvancloud.ir", "https://mirror-docker.runflare.com"]`, then Apply & restart. Alternatively pass `--build-arg BASE_IMAGE=docker.arvancloud.ir/library/ubuntu:24.04`; `--build-arg APT_MIRROR=<ubuntu mirror>` (amd64) helps if the Ubuntu archive is unreachable
 - After pulling these changes run `npm run lab:build` once, then `npm run db:seed`. Backend day numbers changed (45 → 50 days), so progress recorded on the old Backend days will point at different lessons; reseed on a fresh database if that matters.
 
 Student containers never see the Docker socket. The API key never goes to the browser.
