@@ -1,525 +1,780 @@
-import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
+import { day, goLab, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
 
+/**
+ * Module 2 — Concurrency. Every day ends in a real lab run with -race.
+ * Order: goroutines → channels → select/timers → memory model & locks →
+ * context → advanced primitives → production patterns.
+ */
 export const goConcurrencyDays: DaySeed[] = [
   day({
-    dayNumber: 9,
+    dayNumber: 10,
     phaseSlug: "go-concurrency",
-    titleFa: "Goroutine و مدل اجرای Go",
-    objectiveFa: "مدل M:N scheduling، هزینهٔ goroutine و الگوهای leak/panic را در مصاحبه توضیح دهید.",
+    titleFa: "Goroutine، چرخهٔ عمر و leak",
+    objectiveFa: "هر goroutine که می‌سازید باید مسیر خروج مشخص داشته باشد؛ leak را تشخیص دهید و رفع کنید.",
     topicSlugs: ["go-goroutines", "go-patterns"],
     lessons: [
       goLesson({
         slug: "goroutine-fundamentals",
         topicSlug: "go-goroutines",
-        titleFa: "Goroutine و scheduler",
-        objectiveFa: "تفاوت thread OS و goroutine، نقش GOMAXPROCS و نقطهٔ yield را بدانید.",
-        theoryMd: `## اهداف یادگیری
-- ساخت goroutine با \`go\` و چرخهٔ عمر آن
-- مدل G-M-P و نقش network poller
-- هزینهٔ راه‌اندازی goroutine در مقابل thread
+        titleFa: "Goroutine: ارزان ولی نه رایگان",
+        objectiveFa: "هزینهٔ goroutine، رفتار panic و قانون «چه کسی آن را متوقف می‌کند؟» را بدانید.",
+        theoryMd: `## مفهوم
+- \`go f()\` یک goroutine می‌سازد: stack اولیهٔ ۲KB و قابل رشد، که scheduler روی threadها multiplex می‌کند (روز Runtime).
+- ارزان است، پس می‌شود میلیون‌ها ساخت. ولی **هر goroutine حافظه، جا در scheduler و معمولاً یک connection یا buffer نگه می‌دارد.**
+- \`main\` منتظر goroutineها نمی‌ماند. با برگشت main همه بدون اجرای defer کشته می‌شوند.
 
-## توضیح مفهوم
-Goroutine سبک است (~چند KB stack اولیه، قابل grow) و توسط runtime روی threadهای OS multiplex می‌شود. Scheduler work-stealing انجام می‌دهد. Blocking روی net I/O اغلب thread را آزاد می‌کند؛ blocking روی syscall یا lock ممکن است thread اضافه کند.
+## قانون طلایی
+> قبل از نوشتن \`go\`، جواب بدهید: **این goroutine کی و چطور تمام می‌شود و چه کسی منتظرش است؟**
 
-## کاربرد واقعی
-HTTP handlerها، consumerهای queue، background refresh، parallel fan-out روی shardها — هر جا concurrency بدون هزاران thread OS لازم است.
+## Panic
+**panic بدون recover در هر goroutine، کل برنامه را می‌کشد**، نه فقط آن goroutine. recover سراسری وجود ندارد. هر goroutine که کد غیرقابل اعتماد اجرا می‌کند (پلاگین، callback، کار background در handler) recover خودش را لازم دارد و باید خطا را به جایی گزارش دهد.
 
-## اشتباهات رایج
-- راه انداختن goroutine بدون راه خروج (leak)
-- فرض اینکه \`go func(){...}()\` panic را به main propagate می‌کند
-- infinite goroutine spawn بدون backpressure
-- شمارش goroutine با sleep به‌جای synchronization
+## Leak
+goroutine که برای همیشه روی channel، lock یا I/O بدون timeout منتظر بماند هرگز جمع نمی‌شود. GC goroutine block‌شده را آزاد نمی‌کند.
 
-## سؤالات مصاحبه
-1. تفاوت goroutine و OS thread از نظر memory و switching؟
-2. \`GOMAXPROCS\` چه چیزی را محدود می‌کند؟
-3. چرا goroutine leak در production خطرناک‌تر از یک memory leak کوچک است؟`,
-        practicalMd: `با \`runtime.NumGoroutine()\` قبل/بعد از یک بار اجرا الگوی leak را در یادداشت مقایسه کنید (روی کد نمونه).`,
-        exampleMd: "`go func(){...}()` + channel برای هماهنگی.",
-      }),
-      goLesson({
-        slug: "goroutine-leaks-panic",
-        topicSlug: "go-patterns",
-        titleFa: "Leak، panic و graceful coordination",
-        objectiveFa: "الگوی errgroup، recover در worker و سیگنال shutdown را بشناسید.",
-        theoryMd: `## اهداف یادگیری
-- تشخیص goroutine leak (channel block، select بی‌پایان)
-- panic در goroutine و recover محدود
-- انتظار برای پایان کار با \`sync.WaitGroup\`
+علت‌های رایج:
+1. send روی channel که دیگر کسی از آن نمی‌خواند (مثلاً caller بعد از timeout رفته)
+2. خواندن از channel که هرگز close نمی‌شود
+3. I/O بدون deadline
+4. \`time.Ticker\` که Stop نشده و goroutineای که رویش range می‌زند
 
-## توضیح مفهوم
-Leak وقتی است که goroutine برای همیشه block مانده و GC آن را جمع نمی‌کند. panic فقط همان goroutine را می‌کشد مگر recover شود.
+## تشخیص
+- متریک \`go_goroutines\` در Prometheus: رشد یکنواخت یعنی leak.
+- \`/debug/pprof/goroutine?debug=2\` stackها را گروه‌بندی‌شده نشان می‌دهد.
+- در تست: \`go.uber.org/goleak\`.
 
-## کاربرد واقعی
-سرویس‌های long-running با health check روی goroutine count؛ worker pool با context cancel.
+## سؤال مصاحبه
+**«سرویس بعد از هر timeout downstream حافظه‌اش کمی بالا می‌رود و پایین نمی‌آید. حدس اول؟»**
+پاسخ: goroutineای که نتیجه را روی channel بدون buffer می‌فرستد ولی caller بعد از timeout رفته است. sender برای همیشه block می‌ماند. راه‌حل: channel با buffer یک یا select روی \`ctx.Done()\` در sender.`,
+        practicalMd: `قبل از لب، کد \`FirstResult\` را بخوانید و روی کاغذ بشمارید با سه fetcher و یک برنده، چند goroutine تا ابد block می‌مانند.`,
+        exampleMd: `~~~go
+// leak: اگر select زودتر با timeout برگردد، این send هرگز گیرنده ندارد
+ch := make(chan Result)
+go func() { ch <- slowCall() }()
 
-## اشتباهات رایج
-- \`WaitGroup.Add\` بعد از \`Wait\` یا race روی Add
-- فراموش \`defer wg.Done()\`
-- spawn بدون upper bound روی load spike
-
-## سؤالات مصاحبه
-1. الگوی ایمن shutdown چند goroutine چیست؟
-2. چه زمانی \`runtime.Goexit\` درست است؟
-3. چطور leak را با pprof goroutine profile پیدا می‌کنید؟`,
-        practicalMd: `یک leak عمدی (goroutine منتظر channel بدون reader) را روی کاغذ ترسیم و مسیر unblock را بنویسید.`,
-        exampleMd: `\`\`\`go
-defer wg.Done(); defer func(){ recover() }()
-\`\`\``,
+// امن: buffer به اندازهٔ تعداد senderها
+ch := make(chan Result, 1)
+~~~`,
       }),
     ],
     exercises: [
-      noteExercise({
-        titleFa: "تحلیل goroutine leak",
+      goLab({
+        lab: "goroutine-leak",
+        titleFa: "لب: FirstResult بدون leak",
         topicSlug: "go-goroutines",
-        lessonSlug: "goroutine-leaks-panic",
-        path: "/tmp/go-day9-leak.txt",
-        mustContain: "block",
-        instructionsMd: `سناریویی بنویسید که goroutine روی channel بدون buffer منتظر می‌ماند و reader ندارد. علت block بودن را توضیح دهید و واژهٔ block را در فایل بیاورید.`,
+        lessonSlug: "goroutine-fundamentals",
+        instructionsMd: `\`FirstResult\` هم‌زمان از چند replica می‌پرسد و اولین جواب موفق را برمی‌گرداند (الگوی hedged request). این تابع در production goroutine نشت می‌دهد و وقتی همهٔ replicaها خطا بدهند، تا پایان timeout معطل می‌ماند.
+
+چهار شرط در توضیح تابع آمده است. همه را برآورده کنید. سؤال مصاحبه: چرا cancel کردن ctx به تنهایی leak را رفع نمی‌کند؟`,
+        hints: [
+          "دو مشکل جدا داریم: (۱) senderهایی که دیر می‌رسند کسی را برای دریافت ندارند؛ (۲) fetcherهای کند هرگز نمی‌فهمند کار تمام شده.",
+          "channel نتایج را با buffer به اندازهٔ len(fetchers) بسازید و هم موفقیت و هم خطا را بفرستید. یک ctx فرزند با WithCancel بسازید و defer cancel() کنید.",
+          "در حلقه‌ای به تعداد fetcherها از channel بخوانید: اولین موفقیت را return کنید، خطاها را جمع کنید، و در پایان fmt.Errorf(\"%w: %w\", ErrAllFailed, errors.Join(errs...)) برگردانید. select روی ctx.Done() را هم نگه دارید.",
+        ],
+        race: true,
       }),
     ],
     scenario: noteScenario({
-      titleFa: "رشد بی‌نهایت goroutine پس از ترافیک",
-      path: "/tmp/go-day9-scenario.txt",
+      titleFa: "رشد بی‌نهایت goroutine پس از کمپین",
+      path: "/tmp/go-day10-scenario.txt",
       mustContain: "leak",
-      incidentMd: "پس از کمپین مارکتینگ، RAM سرویس ۸GB شده و GOMEMLIMIT نزدیک است؛ CPU متوسط.",
-      symptomsMd: "pprof goroutine نشان می‌دهد هزاران goroutine در حالت block روی unbuffered send.",
-      rootCause: "spawn یک goroutine per request بدون semaphore یا worker pool؛ handler منتظر downstream کند می‌ماند",
+      incidentMd: "پس از کمپین تخفیف، RAM سرویس به ۸GB رسیده و متریک go_goroutines از ۲ هزار به ۴۰۰ هزار رسیده و پایین نمی‌آید.",
+      symptomsMd: "pprof goroutine نشان می‌دهد ۳۹۰ هزار goroutine در chan send داخل تابع fetchPrice منتظرند.",
+      rootCause: "fetchPrice نتیجه را روی channel بدون buffer می‌فرستد ولی handler بعد از timeout برگشته؛ هیچ گیرنده‌ای نیست",
     }),
     exam: {
-      titleFa: "آزمون روز ۹ — Goroutine",
+      titleFa: "آزمون — Goroutine",
       questions: [
         mc(
-          "panic در goroutine فرزند چه می‌شود؟",
-          ["کل process exit می‌کند", "فقط همان goroutine می‌میرد مگر recover", "همیشه به main propagate می‌شود", "کامپایلر جلوگیری می‌کند"],
-          "فقط همان goroutine می‌میرد مگر recover",
-          "بدون recover، main ادامه می‌دهد ولی goroutine می‌میرد.",
+          "panic بدون recover در یک goroutine فرزند چه می‌کند؟",
+          ["فقط همان goroutine متوقف می‌شود", "کل process خاتمه می‌یابد", "به main منتقل و آنجا قابل recover است", "نادیده گرفته می‌شود"],
+          "کل process خاتمه می‌یابد",
+          "panic unrecovered در هر goroutine برنامه را با stack trace می‌کشد؛ recover سراسری وجود ندارد.",
           "go-goroutines",
         ),
-        tf("هر goroutine دقیقاً یک OS thread اختصاصی دارد.", false, "M:N multiplexing روی thread pool است.", "go-goroutines"),
-        sa("متغیر محیطی برای تعداد Pهای scheduler؟", "GOMAXPROCS", "تعداد threadهای قابل اجرای Go code همزمان.", "go-goroutines"),
+        tf("GC goroutineهایی را که برای همیشه روی channel block شده‌اند جمع می‌کند.", false, "goroutine block‌شده زنده است و هرگز جمع نمی‌شود.", "go-goroutines"),
         mc(
-          "نشانهٔ رایج goroutine leak؟",
-          ["کاهش CPU", "رشد monotonic goroutine count", "کاهش heap", "افزایش compile time"],
-          "رشد monotonic goroutine count",
-          "تعداد goroutineهای block‌شده مدام بالا می‌رود.",
+          "نشانهٔ رایج goroutine leak در مانیتورینگ؟",
+          ["کاهش CPU", "رشد یکنواخت go_goroutines بدون بازگشت", "کاهش heap", "افزایش زمان build"],
+          "رشد یکنواخت go_goroutines بدون بازگشت",
+          "goroutineهای block‌شده جمع می‌شوند و پایین نمی‌آیند.",
           "go-patterns",
         ),
+        sa("کدام endpoint stackهای همهٔ goroutineها را نشان می‌دهد؟", "/debug/pprof/goroutine", "با ?debug=2 کامل.", "go-goroutines"),
+        tf("با برگشت main، deferهای goroutineهای دیگر اجرا می‌شوند.", false, "process خاتمه می‌یابد و defer آن‌ها اجرا نمی‌شود.", "go-goroutines"),
       ],
     },
   }),
+
   day({
-    dayNumber: 10,
+    dayNumber: 11,
     phaseSlug: "go-concurrency",
-    titleFa: "Channel — buffered، unbuffered و بستن",
-    objectiveFa: "معنای synchronization در channel، قوانین close و nil channel را در عمق توضیح دهید.",
+    titleFa: "Channel — buffered، unbuffered، close و ownership",
+    objectiveFa: "معنای synchronization در channel، قوانین close و nil channel را دقیق توضیح دهید.",
     topicSlugs: ["go-channels"],
     lessons: [
       goLesson({
         slug: "channels-sync",
         topicSlug: "go-channels",
-        titleFa: "Buffered و unbuffered channels",
-        objectiveFa: "تفاوت rendezvous و queue و happens-before روی send/recv را بدانید.",
-        theoryMd: `## اهداف یادگیری
-- Unbuffered: send تا recv sync می‌شود (handoff)
-- Buffered: send تا فضا پر نشود block نمی‌شود
-- close: دیگر send ممنوع؛ recv باقی‌مانده و سپس zero value + ok=false
+        titleFa: "Channel: ارتباط و هماهنگی",
+        objectiveFa: "جدول رفتار channel در حالت‌های nil، باز و بسته را از حفظ بدانید.",
+        theoryMd: `## مفهوم
+- **Unbuffered:** send تا رسیدن receiver منتظر می‌ماند (rendezvous). تحویل قطعی و happens-before صریح.
+- **Buffered:** send تا پر شدن buffer منتظر نمی‌ماند. نرخ تولید و مصرف را decouple می‌کند ولی **backpressure را پنهان می‌کند**.
+- channel درون خود یک mutex و صف دارد (\`hchan\`)؛ جادو نیست و برای counter ساده از mutex کندتر است.
 
-## توضیح مفهوم
-Channel هم communication و هم synchronization است. Unbuffered برای handoff قطعی؛ buffered برای decouple نرخ تولید/مصرف با cap مشخص.
+## جدول طلایی (حفظ کنید)
+| عملیات | nil | باز | بسته |
+|---|---|---|---|
+| send | block تا ابد | block یا موفق | **panic** |
+| receive | block تا ابد | block یا مقدار | zero value و \`ok=false\` (بعد از خالی شدن buffer) |
+| close | **panic** | موفق | **panic** |
 
-## کاربرد واقعی
-Pipeline stageها، limit concurrent work (semaphore با buffered channel)، signal one-shot با close.
+## Ownership
+- **فقط sender (مالک) close می‌کند**، آن هم فقط وقتی receiver باید بفهمد «دیگر چیزی نمی‌آید» (\`range\`). close برای آزاد کردن حافظه لازم نیست.
+- با چند sender: یک WaitGroup و یک goroutine جدا که بعد از \`wg.Wait()\` close کند.
+- channel در signature را جهت‌دار کنید: \`<-chan T\` برای مصرف‌کننده و \`chan<- T\` برای تولیدکننده. کامپایلر سوءاستفاده را می‌گیرد.
 
-## اشتباهات رایج
-- double close (panic)
-- send روی channel بسته‌شده توسط خودتان
-- انتظار drain بدون range یا loop با ok
-- buffered بزرگ بدون دلیل (ماسک کردن backpressure)
+## close به‌عنوان broadcast
+\`close(done)\` همهٔ receiverها را هم‌زمان آزاد می‌کند. \`ctx.Done()\` دقیقاً همین است.
 
-## سؤالات مصاحبه
-1. چرا «do not communicate by sharing memory»؟
-2. رفتار recv از channel بسته چیست؟
-3. تفاوت nil channel در send/recv/select؟
-4. چرا close فقط در producer و pipeline سه‌مرحله‌ای چطور deadlock می‌گیرد؟`,
-        practicalMd: `unbuffered در برابر buffered cap=1 و pipeline کوتاه generate→map را شماتیک بکشید.`,
-        exampleMd: `\`\`\`go
-ch := make(chan int, 2); ch <- 1; close(ch)
-for v := range ch { _ = v }
-\`\`\``,
+## سؤال مصاحبه
+**«چرا buffer بزرگ (مثلاً ۱۰ هزار) راه‌حل کندی consumer نیست؟»**
+پاسخ: فقط زمان رسیدن به مشکل را عقب می‌اندازد، حافظه مصرف می‌کند و با crash آن پیام‌ها گم می‌شوند. کندی باید به producer منتقل شود (backpressure) یا consumer مقیاس بگیرد.`,
+        practicalMd: `pipeline سه‌مرحله‌ای generate، square و print بنویسید که هر مرحله channel خروجی‌اش را خودش close کند.`,
+        exampleMd: `~~~go
+func merge(cs ...<-chan int) <-chan int {
+	out := make(chan int)
+	var wg sync.WaitGroup
+	for _, c := range cs {
+		wg.Add(1)
+		go func(c <-chan int) {
+			defer wg.Done()
+			for v := range c {
+				out <- v
+			}
+		}(c)
+	}
+	go func() { wg.Wait(); close(out) }() // یک close، بعد از آخرین sender
+	return out
+}
+~~~`,
       }),
     ],
     exercises: [
       noteExercise({
-        titleFa: "تشخیص deadlock channel",
+        titleFa: "تشخیص deadlock در pipeline",
         topicSlug: "go-channels",
         lessonSlug: "channels-sync",
-        path: "/tmp/go-day10-deadlock.txt",
-        mustContain: "unbuffered",
-        instructionsMd: `مثالی بنویسید که دو goroutine هر دو روی unbuffered send منتظرند. علت را توضیح کنید و unbuffered را ذکر کنید.`,
+        path: "/tmp/go-day11-deadlock.txt",
+        mustContain: "close",
+        instructionsMd: `در ترمینال لب برنامه‌ای بنویسید که دو producer روی یک channel می‌فرستند و consumer با range می‌خواند ولی هیچ‌کس close نمی‌کند. اجرا کنید، پیام runtime را در فایل کپی و علت و الگوی درست close را توضیح دهید.`,
+        answerOutlineFa:
+          "پیام: fatal error: all goroutines are asleep - deadlock! — range منتظر close است. الگو: WaitGroup روی producerها و یک goroutine که بعد از wg.Wait() تنها یک بار close کند.",
       }),
     ],
     scenario: noteScenario({
-      titleFa: "Deadlock در pipeline deploy",
-      path: "/tmp/go-day10-scenario.txt",
-      mustContain: "close",
-      incidentMd: "سرویس ingest بعد از refactor گاهی hang می‌شود؛ هیچ CPU بالا نیست.",
-      symptomsMd: "همه goroutineها block روی channel؛ یک stage دیگر send نمی‌کند.",
-      rootCause: "consumer متوقف شد ولی producer همچنان send می‌کند روی unbuffered بدون listener؛ close هرگز فراخوانی نشد",
+      titleFa: "panic: send on closed channel در shutdown",
+      path: "/tmp/go-day11-scenario.txt",
+      mustContain: "owner",
+      incidentMd: "در هر deploy چند pod با panic: send on closed channel خاتمه می‌یابند.",
+      symptomsMd: "تابع Stop کانال jobs را close می‌کند در حالی که handlerهای HTTP هنوز روی آن send می‌کنند.",
+      rootCause: "طرف receiver یا ناظر channel را close کرد در حالی که senderها هنوز فعال بودند؛ ownership رعایت نشده بود (owner باید close کند، یا shutdown با ctx اعلام شود)",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۰ — Channel",
+      titleFa: "آزمون — Channel",
       questions: [
-        tf("ارسال روی channel بسته باعث panic می‌شود.", true, "مگر recover یا select با default طراحی شده باشد.", "go-channels"),
+        tf("ارسال روی channel بسته همیشه panic می‌کند، حتی داخل select با default.", true, "default فقط وقتی انتخاب می‌شود که هیچ case آماده نباشد؛ send روی channel بسته «آماده» است و panic می‌کند.", "go-channels"),
         mc(
-          "recv از nil channel چه می‌کند؟",
-          ["panic فوری", "block برای همیشه", "zero value برمی‌گرداند", "compile error"],
-          "block برای همیشه",
-          "عملیات روی nil channel block می‌ماند.",
+          "receive از nil channel چه می‌کند؟",
+          ["panic فوری", "برای همیشه block می‌شود", "zero value برمی‌گرداند", "خطای کامپایل"],
+          "برای همیشه block می‌شود",
+          "send و receive روی nil channel همیشه block هستند.",
           "go-channels",
         ),
-        sa("چه کسی باید channel را close کند؟", "sender producer", "فقط طرفی که send می‌کند مالک close است.", "go-channels"),
         mc(
-          "buffered channel با cap=0 معادل چیست؟",
-          ["unbuffered", "همیشه non-blocking", "فقط برای int", "غیرقانونی"],
-          "unbuffered",
-          "make(chan T) و make(chan T, 0) یکسان‌اند.",
+          "receive از channel بسته و خالی؟",
+          ["panic", "block", "zero value و ok=false", "آخرین مقدار ارسالی"],
+          "zero value و ok=false",
+          "range روی آن تمام می‌شود.",
           "go-channels",
         ),
+        sa("چه کسی باید channel را close کند؟", "sender", "مالک یا تولیدکننده؛ هرگز receiver.", "go-channels"),
+        tf("برای آزاد شدن حافظه باید همیشه channel را close کرد.", false, "GC channel بدون ارجاع را جمع می‌کند؛ close فقط سیگنال «تمام شد» است.", "go-channels"),
       ],
     },
   }),
+
   day({
-    dayNumber: 11,
+    dayNumber: 12,
     phaseSlug: "go-concurrency",
-    titleFa: "Select، timeout و multiplexing",
-    objectiveFa: "select برای timeout، non-blocking و fan-in را در کد production توضیح دهید.",
+    titleFa: "Select، timeout و timerها",
+    objectiveFa: "select را برای timeout، cancel و multiplexing به‌کار ببرید و دام‌های timer را بشناسید.",
     topicSlugs: ["go-select", "go-patterns"],
     lessons: [
       goLesson({
         slug: "select-basics",
         topicSlug: "go-select",
-        titleFa: "Select و fairness",
-        objectiveFa: "رفتار pseudo-random انتخاب case آماده و default را بدانید.",
-        theoryMd: `## اهداف یادگیری
-- select بین چند send/recv
-- \`default\` برای non-blocking
-- ترکیب با \`time.After\` برای timeout
+        titleFa: "Select و timerها",
+        objectiveFa: "رفتار انتخاب تصادفی، default، nil channel و Timer و Ticker را بدانید.",
+        theoryMd: `## مفهوم
+- \`select\` منتظر اولین case آماده می‌ماند. اگر چند case هم‌زمان آماده باشند، **تصادفی** یکی انتخاب می‌شود (اولویت وجود ندارد).
+- \`default\` select را non-blocking می‌کند.
+- **case روی nil channel هرگز انتخاب نمی‌شود.** با nil کردن یک channel می‌توان آن case را در حلقه غیرفعال کرد (مثلاً بعد از close شدن ورودی).
+- select خالی (\`select {}\`) برای همیشه block می‌شود.
 
-## توضیح مفهوم
-اگر چند case آماده باشد یکی pseudo-random انتخاب می‌شود. select روی nil channel هرگز انتخاب نمی‌شود (برای disable کردن case).
+## Timer و Ticker
+- \`time.After(d)\` یک channel برمی‌گرداند. ساده است ولی در هر بار اجرا timer جدید می‌سازد.
+- **قبل از Go 1.23** timer ساخته‌شده با \`time.After\` تا موعدش جمع نمی‌شد. در حلقهٔ داغ با timeout طولانی، میلیون‌ها timer زنده انباشته می‌شد. از 1.23 timerهای بی‌ارجاع حتی بدون Stop جمع می‌شوند، ولی نسخهٔ Go سرویس‌ها همیشه جدید نیست.
+- **الگوی امن در حلقه:** یک \`time.NewTimer\` و \`Reset\` در هر دور، یا بهتر، \`context.WithTimeout\`.
+- \`time.NewTicker\` برای کار **دوره‌ای** است، نه timeout. حتماً \`defer t.Stop()\`.
 
-## کاربرد واقعی
-Heartbeat، cancel درخواست طولانی، merge چند stream با select در loop.
+## اولویت دادن
+چون انتخاب تصادفی است، برای اولویت دادن به cancel قبل از کار، اول یک select non-blocking روی \`ctx.Done()\` بزنید.
 
 ## اشتباهات رایج
-- busy loop با default بدون sleep/backoff
-- leak timer با time.After در loop داغ (ترجیح time.NewTicker)
-- فراموش کردن break؛ label برای خروج از for
+- \`for { select { ... default: } }\` بدون block ← busy loop با CPU صددرصد.
+- \`break\` داخل select فقط از select خارج می‌شود، نه از for. از label یا return استفاده کنید.
 
-## سؤالات مصاحبه
-1. چطور case را در select غیرفعال کنید؟
-2. تفاوت context deadline و time.After در handler؟`,
-        practicalMd: `الگوی request با timeout با select بین result و time.After را طراحی کنید.`,
-        exampleMd: `\`\`\`go
-select {
-case v := <-ch:
-  return v
-case <-time.After(2 * time.Second):
-  return errors.New("timeout")
+## سؤال مصاحبه
+**«چطور یک case را موقتاً در for-select غیرفعال می‌کنید؟»**
+پاسخ: channel آن case را nil می‌کنیم.`,
+        practicalMd: `حلقه‌ای بنویسید که دو channel ورودی را merge کند و وقتی هر دو بسته شدند خارج شود (با تکنیک nil کردن).`,
+        exampleMd: `~~~go
+for a != nil || b != nil {
+	select {
+	case v, ok := <-a:
+		if !ok { a = nil; continue }
+		out <- v
+	case v, ok := <-b:
+		if !ok { b = nil; continue }
+		out <- v
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
-\`\`\``,
+~~~`,
       }),
     ],
     exercises: [
       noteExercise({
-        titleFa: "پیاده‌سازی timeout با context",
+        titleFa: "busy loop در polling",
         topicSlug: "go-select",
         lessonSlug: "select-basics",
-        path: "/tmp/go-day11-select.txt",
+        path: "/tmp/go-day12-select.txt",
         mustContain: "select",
-        instructionsMd: `شبه‌کد handler که با select بین ctx.Done() و work منتظر می‌ماند را بنویسید و select را ذکر کنید.`,
+        instructionsMd: `کد زیر CPU را صددرصد می‌کند. توضیح دهید چرا و نسخهٔ درست را با ticker و ctx.Done در select بنویسید.
+
+~~~go
+for {
+	select {
+	case job := <-jobs:
+		handle(job)
+	default:
+		// چیزی نیست
+	}
+}
+~~~`,
+        answerOutlineFa: "default باعث می‌شود select هیچ‌وقت block نشود؛ حلقه بی‌وقفه می‌چرخد. نسخهٔ درست default را حذف می‌کند و case <-ctx.Done() اضافه می‌کند؛ اگر polling لازم است، case <-ticker.C با defer ticker.Stop().",
       }),
     ],
     scenario: noteScenario({
-      titleFa: "CPU ۱۰۰٪ از busy select",
-      path: "/tmp/go-day11-scenario.txt",
+      titleFa: "CPU صددرصد از busy select",
+      path: "/tmp/go-day12-scenario.txt",
       mustContain: "default",
-      incidentMd: "پس از افزودن polling، یک pod CPU saturated شده.",
-      symptomsMd: "flame graph نشان می‌دهد loop تایت در select با default.",
-      rootCause: "non-blocking select در tight loop بدون backoff یا block روی event",
+      incidentMd: "پس از افزودن polling برای کانفیگ، یک pod همیشه یک هستهٔ کامل CPU مصرف می‌کند.",
+      symptomsMd: "flame graph: runtime.selectnbrecv در بالای لیست.",
+      rootCause: "non-blocking select با default در حلقهٔ تنگ بدون block روی رویداد یا ticker",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۱ — Select",
+      titleFa: "آزمون — Select",
       questions: [
-        tf("select با همه caseهای nil block می‌ماند.", true, "هیچ case قابل انتخاب نیست.", "go-select"),
+        tf("اگر چند case در select هم‌زمان آماده باشند، اولین case نوشته‌شده انتخاب می‌شود.", false, "انتخاب تصادفی یکنواخت است.", "go-select"),
         mc(
-          "برای disable کردن recv موقت در for-select؟",
-          ["close channel", "assign nil به case channel", "panic", "GOMAXPROCS=1"],
-          "assign nil به case channel",
-          "nil channel در select هرگز اجرا نمی‌شود.",
+          "برای غیرفعال کردن موقت یک case در for-select؟",
+          ["close کردن channel", "nil کردن متغیر channel", "panic", "GOMAXPROCS=1"],
+          "nil کردن متغیر channel",
+          "case روی nil channel هرگز آماده نمی‌شود.",
           "go-select",
         ),
-        sa("در loop داغ timeout کوتاه با چه API بهتر از time.After است؟", "time.NewTicker", "جلوگیری از leak timer در هر iteration.", "go-select"),
+        mc(
+          "timeout تکرارشونده داخل حلقهٔ داغ در Go قدیمی‌تر از 1.23؟",
+          ["time.After در هر دور", "یک time.NewTimer با Reset", "time.Sleep", "time.NewTicker"],
+          "یک time.NewTimer با Reset",
+          "time.After در هر دور timer جدیدی می‌سازد که تا موعدش جمع نمی‌شد. Ticker برای کار دوره‌ای است نه timeout.",
+          "go-select",
+        ),
+        tf("break داخل select حلقهٔ for بیرونی را هم می‌شکند.", false, "فقط select؛ از label استفاده کنید.", "go-select"),
       ],
     },
   }),
-  day({
-    dayNumber: 12,
-    phaseSlug: "go-concurrency",
-    titleFa: "sync، Mutex و atomic",
-    objectiveFa: "WaitGroup، Mutex/RWMutex، atomic و trade-off lock vs channel را مقایسه کنید.",
-    topicSlugs: ["go-sync", "go-patterns"],
-    lessons: [
-      goLesson({
-        slug: "waitgroup-mutex",
-        topicSlug: "go-sync",
-        titleFa: "WaitGroup و Mutex",
-        objectiveFa: "data race را با mutex حل کنید و RWMutex را برای read-heavy انتخاب کنید.",
-        theoryMd: `## اهداف یادگیری
-- WaitGroup برای انتظار batch goroutine
-- Mutex برای exclusive access
-- RWMutex برای خوانندهٔ زیاد / نویسندهٔ کم
 
-## توضیح مفهوم
-Memory مشترک نیاز به happens-before دارد. Mutex سنگین‌تر از atomic برای counter ساده است ولی برای invariant پیچیده لازم است.
-
-## کاربرد واقعی
-In-memory cache با RWMutex؛ parallel HTTP fetch با WaitGroup.
-
-## اشتباهات رایج
-- کپی کردن sync.Mutex (همیشه pointer به struct حاوی mutex)
-- lock nested بدون ترتیب ثابت → deadlock
-- RLock سپس Lock در همان goroutine (deadlock)
-
-## سؤالات مصاحبه
-1. چه زمانی channel به‌جای mutex؟
-2. چرا embedding sync.Mutex رایج است؟
-3. atomic.Int64 برای counter و \`go test -race\` چه زمانی؟`,
-        practicalMd: `Mutex vs atomic.Int64 برای counter؛ race detector در CI.`,
-        exampleMd: `\`\`\`go
-var c atomic.Int64; c.Add(1)
-\`\`\``,
-      }),
-    ],
-    exercises: [
-      noteExercise({
-        titleFa: "رفع data race",
-        topicSlug: "go-sync",
-        lessonSlug: "waitgroup-mutex",
-        path: "/tmp/go-day12-race.txt",
-        mustContain: "mutex",
-        instructionsMd: `counter مشترک بدون sync را توصیف کنید و fix با mutex را بنویسید؛ mutex را ذکر کنید.`,
-      }),
-    ],
-    scenario: noteScenario({
-      titleFa: "نتیجهٔ تصادفی در cache",
-      path: "/tmp/go-day12-scenario.txt",
-      mustContain: "race",
-      incidentMd: "cache in-memory گاهی دادهٔ قدیمی برمی‌گرداند؛ فقط زیر load بالا.",
-      symptomsMd: "go test -race در integration fail می‌شود.",
-      rootCause: "read map بدون RLock و concurrent write در refresh goroutine",
-    }),
-    exam: {
-      titleFa: "آزمون روز ۱۲ — Sync",
-      questions: [
-        mc(
-          "کدام برای parallel wait چند worker مناسب است؟",
-          ["Mutex", "WaitGroup", "Once", "Cond بدون loop"],
-          "WaitGroup",
-          "WaitGroup انتظار پایان goroutineها را هماهنگ می‌کند.",
-          "go-sync",
-        ),
-        tf("کپی شدن struct حاوی Mutex مجاز است.", false, "Mutex باید کپی نشود؛ از pointer استفاده کنید.", "go-sync"),
-        mc(
-          "read-heavy map in-memory؟",
-          ["sync.Mutex only", "sync.RWMutex", "بدون lock", "channel فقط"],
-          "sync.RWMutex",
-          "RLock اجازهٔ خوانندگان همزمان می‌دهد.",
-          "go-sync",
-        ),
-        sa("پرچم تست race detector؟", "go test -race", "instrumentation در runtime test.", "go-sync"),
-      ],
-    },
-  }),
   day({
     dayNumber: 13,
     phaseSlug: "go-concurrency",
+    titleFa: "Memory model، Mutex و atomic",
+    objectiveFa: "happens-before را توضیح دهید، data race را با -race پیدا کنید و بین mutex، RWMutex و atomic درست انتخاب کنید.",
+    topicSlugs: ["go-memory-model", "go-sync"],
+    lessons: [
+      goLesson({
+        slug: "memory-model-basics",
+        topicSlug: "go-memory-model",
+        titleFa: "Go memory model و data race",
+        objectiveFa: "بدانید چه چیزی visibility بین goroutineها را تضمین می‌کند و چه چیزی نه.",
+        theoryMd: `## مفهوم
+Go memory model تعیین می‌کند نوشتن یک goroutine **کی** برای goroutine دیگر قابل مشاهده است. بدون synchronization، کامپایلر و CPU می‌توانند دستورها را reorder کنند و مقدار در cache یک هسته بماند.
+
+## چه چیزهایی happens-before می‌سازند
+- send روی channel قبل از receive متناظرش
+- close قبل از receiveای که zero value به خاطر close می‌گیرد
+- \`Unlock\` قبل از \`Lock\` بعدی
+- \`wg.Done\` قبل از برگشت \`wg.Wait\`
+- \`once.Do(f)\`: اجرای f قبل از برگشت هر Do
+- عملیات \`sync/atomic\` (از Go 1.19 رسماً sequentially consistent)
+
+## چه چیزهایی **نمی‌سازند**
+\`time.Sleep\`، «احتمالاً تا الان نوشته شده»، و چاپ با \`fmt\`.
+
+## Data race در برابر race condition
+- **Data race:** دسترسی هم‌زمان به یک حافظه که حداقل یکی نوشتن است و sync ندارد. رفتارش undefined است و ممکن است مقدار نیمه‌نوشته (torn) دیده شود. \`-race\` آن را می‌گیرد.
+- **Race condition:** باگ منطقی ترتیب (check-then-act). حتی با mutex روی هر عملیات جدا ممکن است رخ دهد. \`-race\` آن را نمی‌گیرد.
+
+## Race detector
+- \`go test -race\` و \`go run -race\`، با هزینهٔ حدود ۵ تا ۱۰ برابر حافظه و ۲ تا ۲۰ برابر CPU.
+- **فقط raceهایی را می‌گیرد که در اجرا واقعاً رخ دهند.** پس تست باید هم‌زمانی واقعی بسازد.
+- در CI همیشه روشن، در production خاموش.`,
+        practicalMd: `در لب امروز اول \`go test\` بدون -race و بعد با -race اجرا کنید و تفاوت خروجی را ببینید.`,
+        exampleMd: `~~~go
+var ready bool
+var data string
+
+go func() { data = "x"; ready = true }()
+for !ready {} // data race؛ ممکن است حلقه هرگز تمام نشود یا data خالی دیده شود
+fmt.Println(data)
+~~~`,
+      }),
+      goLesson({
+        slug: "waitgroup-mutex",
+        topicSlug: "go-sync",
+        titleFa: "Mutex، RWMutex، atomic و WaitGroup",
+        objectiveFa: "برای هر حالت ابزار درست را انتخاب و invariant را محافظت کنید.",
+        theoryMd: `## انتخاب ابزار
+| نیاز | ابزار |
+|---|---|
+| یک counter یا flag تکی | \`atomic.Int64\` / \`atomic.Bool\` |
+| چند فیلد که باید با هم سازگار باشند (invariant) | \`sync.Mutex\` |
+| خواندن بسیار زیاد، نوشتن کم، critical section نسبتاً طولانی | \`sync.RWMutex\` |
+| انتقال مالکیت داده یا pipeline | channel |
+| منتظر ماندن برای یک دسته goroutine | \`sync.WaitGroup\` (یا errgroup) |
+
+## نکات Senior
+- **RWMutex همیشه سریع‌تر نیست.** برای critical section کوتاه، overhead خودش از Mutex بیشتر است و نویسنده‌ها ممکن است starve شوند. benchmark کنید.
+- Mutex در Go **reentrant نیست.** Lock دوباره در همان goroutine یعنی deadlock.
+- critical section را کوچک نگه دارید. I/O یا فراخوانی شبکه زیر lock نکنید.
+- ترتیب ثابت گرفتن lockها از deadlock جلوگیری می‌کند.
+- \`wg.Add\` باید **قبل** از \`go\` صدا زده شود، نه داخل goroutine.
+- Mutex را به‌صورت فیلد unexported بگذارید، نه embedded (روز Interface).
+- برای map هم‌زمان: Mutex به همراه map معمولاً کافی است. \`sync.Map\` فقط برای کلیدهای عمدتاً ثابت با خواندن خیلی زیاد یا کلیدهای جدا برای هر goroutine طراحی شده است. برای کنترل بیشتر، shard کردن (N map با N mutex).
+
+## سؤال مصاحبه
+**«چه زمانی channel و چه زمانی mutex؟»**
+پاسخ: channel برای انتقال داده یا مالکیت و هماهنگی مراحل؛ mutex برای محافظت از state مشترک. «Share memory by communicating» شعار است، نه قانون. cache داخل حافظه با mutex خواناتر است.`,
+        practicalMd: `نسخهٔ Mutex و atomic یک counter را benchmark کنید (\`go test -bench . -cpu 1,4\`) و نتیجه را تفسیر کنید.`,
+        exampleMd: `~~~go
+type Stats struct {
+	mu     sync.RWMutex // unexported، embedded نیست
+	counts map[string]int
+}
+
+func (s *Stats) Snapshot() map[string]int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return maps.Clone(s.counts) // هرگز map داخلی را بیرون ندهید
+}
+~~~`,
+      }),
+    ],
+    exercises: [
+      goLab({
+        lab: "data-race",
+        titleFa: "لب: crash تصادفی در شمارندهٔ متریک",
+        topicSlug: "go-sync",
+        lessonSlug: "waitgroup-mutex",
+        instructionsMd: `\`Stats\` در production گاهی با \`fatal error: concurrent map writes\` سرویس را می‌کشد و اعداد داشبورد غلط‌اند. با \`go test -race\` اجرا کنید، گزارش race را بخوانید (کدام خط با کدام خط تداخل دارد) و درستش کنید.
+
+دو باگ وجود دارد. یکی از آن‌ها حتی با mutex هم باقی می‌ماند، اگر حواستان به \`Snapshot\` نباشد.`,
+        hints: [
+          "گزارش race دو stack نشان می‌دهد: Previous write at ... و Read at .... هر دو را پیدا کنید.",
+          "یک فیلد mu sync.RWMutex اضافه کنید؛ نوشتن با Lock و خواندن با RLock. Snapshot نباید map داخلی را برگرداند.",
+          "در Snapshot زیر RLock، maps.Clone(s.counts) برگردانید؛ در Inc با Lock و defer Unlock هر دو فیلد را به‌روز کنید.",
+        ],
+        race: true,
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "موجودی منفی با وجود mutex",
+      path: "/tmp/go-day13-scenario.txt",
+      mustContain: "race condition",
+      incidentMd: "در فلش‌سیل، موجودی یک کالا در حافظهٔ سرویس منفی شده؛ همهٔ متدهای Inventory با mutex محافظت شده‌اند و -race چیزی پیدا نمی‌کند.",
+      symptomsMd: "کد: if inv.Get(id) > 0 { inv.Decrement(id) } — هر متد جدا lock می‌گیرد.",
+      rootCause: "race condition منطقی (check-then-act): بررسی و کاهش اتمیک نیستند؛ باید یک متد TryDecrement زیر یک lock هر دو کار را انجام دهد",
+    }),
+    exam: {
+      titleFa: "آزمون — memory model و sync",
+      questions: [
+        mc(
+          "کدام مورد happens-before ایجاد می‌کند؟",
+          ["time.Sleep بین دو goroutine", "send و receive روی channel", "چاپ با fmt.Println", "افزایش int معمولی"],
+          "send و receive روی channel",
+          "send قبل از receive متناظر happens-before دارد.",
+          "go-memory-model",
+        ),
+        tf("race detector همهٔ data raceهای ممکن در کد را پیدا می‌کند.", false, "فقط raceهایی که در اجرای واقعی رخ می‌دهند.", "go-memory-model"),
+        tf("sync.Mutex در Go reentrant است.", false, "Lock دوباره در همان goroutine deadlock می‌دهد.", "go-sync"),
+        mc(
+          "counter ساده که میلیون‌ها بار در ثانیه افزایش می‌یابد؟",
+          ["sync.RWMutex", "atomic.Int64", "channel با buffer", "sync.Map"],
+          "atomic.Int64",
+          "یک دستور اتمیک CPU؛ بدون lock.",
+          "go-sync",
+        ),
+        sa("پرچم تست race detector؟", "go test -race", "instrumentation در زمان اجرا.", "go-sync"),
+      ],
+    },
+  }),
+
+  day({
+    dayNumber: 14,
+    phaseSlug: "go-concurrency",
     titleFa: "Context — لغو، deadline و propagation",
-    objectiveFa: "درخت context، لغو آبشاری و anti-patternهای value را توضیح دهید.",
+    objectiveFa: "درخت context، لغو آبشاری، deadline budget و anti-patternهای context را توضیح دهید.",
     topicSlugs: ["go-context"],
     lessons: [
       goLesson({
         slug: "context-cancellation",
         topicSlug: "go-context",
-        titleFa: "Cancellation و deadlines",
-        objectiveFa: "WithCancel، WithTimeout، WithDeadline و listening روی Done را مسلط شوید.",
-        theoryMd: `## اهداف یادگیری
-- context سلسله‌مراتبی؛ cancel والد فرزند را لغو می‌کند
-- همیشه defer cancel برای جلوگیری از leak
-- انتقال ctx به تمام I/O و goroutine فرزند
+        titleFa: "Context: سیگنال لغو در کل درخت فراخوانی",
+        objectiveFa: "WithCancel، WithTimeout و WithDeadline، cause و AfterFunc را بشناسید و ctx را تا آخرین I/O برسانید.",
+        theoryMd: `## چرا مهم است
+کاربر تب را بست یا load balancer بعد از ۳۰ ثانیه قطع کرد. اگر ctx به query دیتابیس نرسیده باشد، سرور همچنان کار بی‌فایده انجام می‌دهد و connection pool را اشغال می‌کند. این بار در یک incident اضافه، کل سرویس را می‌خواباند.
 
-## توضیح مفهوم
-Context signal only است؛ دادهٔ business در value نگذارید مگر request-scoped metadata (trace id).
+## مفهوم
+- context درختی و **immutable** است. هر \`With*\` یک فرزند می‌سازد. cancel شدن والد همهٔ فرزندان را cancel می‌کند، ولی برعکس نه.
+- **همیشه \`defer cancel()\`**. در غیر این صورت context و timer آن تا deadline یا لغو والد زنده می‌مانند (\`go vet\` با lostcancel هشدار می‌دهد).
+- \`ctx.Err()\` بعد از لغو \`context.Canceled\` یا \`context.DeadlineExceeded\` است.
+- از Go 1.20 و 1.21: \`WithCancelCause\` و \`context.Cause\` (چرا لغو شد)، \`AfterFunc\` و \`WithoutCancel\` (برای کار پس‌زمینه‌ای که نباید با پایان request لغو شود، مثل ارسال audit log).
 
-## کاربرد واقعی
-HTTP server shutdown، gRPC deadline، query DB با timeout.
+## Deadline budget
+هر hop باید deadline را **کوچک‌تر** کند. API با بودجهٔ ۲ ثانیه نباید به سرویس پایین‌دستی timeout ۵ ثانیه بدهد. gRPC deadline را خودکار propagate می‌کند و در HTTP باید خودتان این کار را بکنید.
 
-## اشتباهات رایج
-- context در struct global
-- ctx بدون cancel leak timer در WithTimeout
-- check نکردن ctx.Err() در loop طولانی
+## قوانین
+1. \`ctx\` اولین پارامتر است و در struct ذخیره نمی‌شود (جز موارد خاص مثل request scope).
+2. \`context.Value\` فقط برای دادهٔ request-scoped و cross-cutting است (trace id، user id احرازشده)، نه پارامتر اختیاری تابع. کلید از تایپ unexported باشد.
+3. \`context.Background()\` فقط در main، init و تست. وسط کد، ctx دریافتی را پاس دهید.
+4. حلقه‌های طولانی CPU-bound، \`ctx.Err()\` را دوره‌ای چک کنند.
 
-## سؤالات مصاحبه
-1. تفاوت Background و TODO؟
-2. چرا context value برای optional parameter بد است؟
-3. الگوی graceful shutdown با context؟`,
-        practicalMd: `handler که ctx.Done را در select با query DB ترکیب می‌کند طراحی کنید.`,
-        exampleMd: `\`\`\`go
-ctx, cancel := context.WithTimeout(parent, 3*time.Second); defer cancel()
-\`\`\`
-HTTP: \`NewRequestWithContext\`؛ worker: ctx از message نه Background.`,
+## سؤال مصاحبه
+**«اگر fn به ctx اهمیت ندهد، چطور تضمین می‌کنید caller سر موعد برمی‌گردد؟»**
+پاسخ: fn را در goroutine با channel که buffer یک دارد اجرا می‌کنیم و روی نتیجه و \`ctx.Done()\` select می‌زنیم. caller به موقع برمی‌گردد ولی fn همچنان منابع مصرف می‌کند. پس راه‌حل واقعی این است که fn هم ctx را رعایت کند.`,
+        practicalMd: `برای یک endpoint با بودجهٔ ۸۰۰ms که سه فراخوانی پایین‌دستی دارد، تقسیم deadline را بنویسید.`,
+        exampleMd: `~~~go
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 800*time.Millisecond)
+	defer cancel()
+
+	row := h.db.QueryRowContext(ctx, q, id)      // DB لغو می‌شود
+	req, _ := http.NewRequestWithContext(ctx, ...) // HTTP هم
+	_ = row
+	_ = req
+}
+~~~`,
       }),
     ],
     exercises: [
-      noteExercise({
-        titleFa: "جلوگیری از context leak",
+      goLab({
+        lab: "ctx-timeout",
+        titleFa: "لب: CallWithTimeout که واقعاً سر وقت برمی‌گردد",
         topicSlug: "go-context",
         lessonSlug: "context-cancellation",
-        path: "/tmp/go-day13-cancel.txt",
-        mustContain: "defer cancel",
-        instructionsMd: `چرا باید بعد از WithTimeout همیشه defer cancel() بزنید؟ توضیح کوتاه با عبارت defer cancel در فایل.`,
+        instructionsMd: `\`CallWithTimeout\` در حال حاضر timeout را نادیده می‌گیرد. تابعی بنویسید که حتی اگر \`fn\` به ctx بی‌اعتنا باشد، caller سر موعد برگردد، و هیچ goroutineای تا ابد block نماند.`,
+        hints: [
+          "به ctx فرزند با deadline نیاز دارید و فراموش نکنید defer cancel().",
+          "fn را در goroutine اجرا کنید و نتیجه را روی channel بفرستید؛ caller روی آن channel و ctx.Done() select بزند.",
+          "اگر channel نتیجه buffer نداشته باشد، goroutine بعد از timeout برای همیشه روی send می‌ماند؛ make(chan result, 1).",
+        ],
+        race: true,
       }),
     ],
     scenario: noteScenario({
-      titleFa: "Timer leak بعد از refactor",
-      path: "/tmp/go-day13-scenario.txt",
-      mustContain: "WithTimeout",
-      incidentMd: "heap تعداد زیادی time.Timer نشان می‌دهد پس از افزایش RPS.",
-      symptomsMd: "goroutine profile تمیز؛ timer bucket بزرگ.",
-      rootCause: "WithTimeout بدون defer cancel در path پرتکرار handler",
+      titleFa: "Connection pool پر بعد از قطع کاربرها",
+      path: "/tmp/go-day14-scenario.txt",
+      mustContain: "QueryContext",
+      incidentMd: "در زمان کندی دیتابیس، سرویس کاملاً از دسترس خارج می‌شود و حتی بعد از برطرف شدن کندی تا ۱۰ دقیقه بازنمی‌گردد.",
+      symptomsMd: "sql.DBStats: InUse=50 (حداکثر) و WaitCount مدام بالا می‌رود؛ کد از db.Query(q) بدون context استفاده می‌کند.",
+      rootCause: "queryها context نداشتند؛ وقتی کلاینت قطع شد، query ادامه یافت و connection را نگه داشت؛ باید QueryContext با r.Context() و timeout استفاده می‌شد",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۳ — Context",
+      titleFa: "آزمون — Context",
       questions: [
-        tf("لغو context والد همهٔ فرزندان را لغو می‌کند.", true, "درخت cancel به descendants propagate می‌شود.", "go-context"),
+        tf("لغو context والد همهٔ فرزندانش را لغو می‌کند.", true, "لغو به پایین درخت propagate می‌شود.", "go-context"),
+        tf("لغو context فرزند والد را هم لغو می‌کند.", false, "فقط از بالا به پایین.", "go-context"),
         mc(
-          "ctx.Err() بعد از cancel چه برمی‌گرداند؟",
-          ["nil", "context.Canceled یا DeadlineExceeded", "panic", "string خالی"],
-          "context.Canceled یا DeadlineExceeded",
-          "نوع خطا مشخص است.",
+          "ctx.Err() بعد از پایان timeout چیست؟",
+          ["nil", "context.Canceled", "context.DeadlineExceeded", "io.EOF"],
+          "context.DeadlineExceeded",
+          "برای cancel دستی Canceled است.",
           "go-context",
         ),
-        sa("اولین پارامتر idiomatic برای cancelable work؟", "context.Context", "ctx به‌عنوان اولین arg.", "go-context"),
+        mc(
+          "کدام استفاده از context.Value مناسب است؟",
+          ["پاس دادن *sql.DB", "trace id درخواست", "پارامتر اختیاری limit", "تنظیمات سرویس"],
+          "trace id درخواست",
+          "Value فقط برای دادهٔ request-scoped و cross-cutting.",
+          "go-context",
+        ),
+        sa("کدام بررسی go vet فراموش کردن cancel را می‌گیرد؟", "lostcancel", "go vet -lostcancel", "go-context"),
       ],
     },
   }),
+
   day({
-    dayNumber: 14,
+    dayNumber: 15,
     phaseSlug: "go-concurrency",
-    titleFa: "الگوهای production — pool، fan، shutdown",
-    objectiveFa: "worker pool، fan-out/in، pipeline، rate limiter و graceful shutdown را طراحی کنید.",
+    titleFa: "هم‌زمانی پیشرفته: errgroup، singleflight، Once و Pool",
+    objectiveFa: "ابزارهای سطح بالاتر sync را بشناسید و singleflight را از صفر پیاده کنید (سؤال رایج مصاحبه).",
+    topicSlugs: ["go-sync", "go-patterns"],
+    lessons: [
+      goLesson({
+        slug: "advanced-sync",
+        topicSlug: "go-sync",
+        titleFa: "errgroup، singleflight، Once و Pool",
+        objectiveFa: "بدانید هر ابزار کدام مشکل production را حل می‌کند.",
+        theoryMd: `## errgroup (\`golang.org/x/sync/errgroup\`)
+WaitGroup به همراه اولین خطا و لغو ctx. با \`g.SetLimit(n)\` هم‌زمانی را محدود می‌کند.
+~~~go
+g, ctx := errgroup.WithContext(ctx)
+g.SetLimit(8)
+for _, id := range ids {
+	g.Go(func() error { return fetch(ctx, id) })
+}
+if err := g.Wait(); err != nil { ... }
+~~~
+در مصاحبه بدانید زیر کاپوت چیست: WaitGroup، \`sync.Once\` برای ثبت اولین خطا، و cancel. (در لب روز بعد خودتان می‌سازیدش.)
+
+## singleflight (\`golang.org/x/sync/singleflight\`)
+**Cache stampede:** کلید داغی (مثلاً صفحهٔ محصول پرفروش) منقضی می‌شود و ۵۰۰ request هم‌زمان به دیتابیس می‌روند. singleflight فراخوانی‌های هم‌زمان با یک کلید را یکی می‌کند. نکته‌ها:
+- نتیجه **cache نمی‌شود**. فقط فراخوانی‌های در جریان یکی می‌شوند.
+- اگر آن یک فراخوانی کند باشد، همه کند می‌شوند. \`DoChan\` با timeout یا \`Forget\` را بشناسید.
+
+## sync.Once، OnceValue و OnceFunc
+مقداردهی lazy و thread-safe. \`sync.OnceValue(func() T)\` از Go 1.21. اگر f panic کند، Once «انجام‌شده» حساب می‌شود.
+
+## sync.Pool
+برای **کاهش allocation** اشیای موقت (\`bytes.Buffer\`، encoder). نکته‌ها:
+- Pool cache نیست. GC در هر چرخه ممکن است محتوا را خالی کند.
+- قبل از Put، شیء را Reset کنید و bufferهای بیش از حد بزرگ را Put نکنید (حافظه نگه می‌دارند).
+- فقط بعد از profile که allocation را hotspot نشان داد.
+
+## sync.Cond
+به ندرت لازم است. معمولاً channel خواناتر است. اگر استفاده کردید، Wait همیشه داخل حلقهٔ for شرط باشد.
+
+## سؤال مصاحبه
+**«singleflight را بدون کتابخانه پیاده کنید.»**
+همان لب امروز است: mutex، map از کلید به \`*call\`، و WaitGroup داخل هر call.`,
+        practicalMd: `قبل از لب روی کاغذ بنویسید: اگر fn در حال اجرا panic کند، در پیاده‌سازی شما بقیهٔ منتظرها چه می‌شوند؟`,
+        exampleMd: `~~~go
+var bufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
+
+func render(v any) []byte {
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer func() {
+		if buf.Cap() <= 64<<10 { // bufferهای غول‌پیکر را نگه ندارید
+			bufPool.Put(buf)
+		}
+	}()
+	_ = json.NewEncoder(buf).Encode(v)
+	return bytes.Clone(buf.Bytes())
+}
+~~~`,
+      }),
+    ],
+    exercises: [
+      goLab({
+        lab: "singleflight",
+        titleFa: "لب: جلوگیری از cache stampede با singleflight",
+        topicSlug: "go-sync",
+        lessonSlug: "advanced-sync",
+        instructionsMd: `\`Group.Do\` را طوری پیاده کنید که فراخوانی‌های هم‌زمان با یک کلید فقط یک بار \`fn\` را اجرا کنند. این سؤال در مصاحبه‌های Go تیم‌های بزرگ رایج است. بعد از حل، با صدای بلند توضیح دهید چرا نباید هنگام \`Wait\` قفل را نگه دارید.`,
+        hints: [
+          "به یک map از key به *call نیاز دارید که با mutex محافظت شود؛ call نتیجه و یک sync.WaitGroup دارد.",
+          "اولین caller یک call می‌سازد، wg.Add(1) می‌کند، قفل را آزاد و fn را اجرا می‌کند. بقیه call موجود را پیدا، قفل را آزاد و wg.Wait() می‌کنند.",
+          "بعد از اجرای fn: زیر قفل کلید را از map حذف کنید (تا cache نشود)، بعد wg.Done(). zero value: اگر map nil بود، داخل Do و زیر قفل make کنید.",
+        ],
+        race: true,
+        difficulty: "hard",
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "دیتابیس زیر بار در لحظهٔ انقضای cache",
+      path: "/tmp/go-day15-scenario.txt",
+      mustContain: "singleflight",
+      incidentMd: "هر ۵ دقیقه یک spike کوتاه CPU دیتابیس تا ۹۵٪ دیده می‌شود و p99 صفحهٔ محصول ۳ ثانیه می‌شود.",
+      symptomsMd: "TTL کلید محصولات پرفروش دقیقاً ۵ دقیقه است؛ در لحظهٔ انقضا صدها query یکسان هم‌زمان اجرا می‌شوند.",
+      rootCause: "cache stampede؛ نیاز به singleflight روی کلید، و TTL با jitter تا کلیدها هم‌زمان منقضی نشوند",
+    }),
+    exam: {
+      titleFa: "آزمون — هم‌زمانی پیشرفته",
+      questions: [
+        tf("singleflight نتیجه را برای فراخوانی‌های بعدی cache می‌کند.", false, "فقط فراخوانی‌های هم‌زمان را یکی می‌کند.", "go-sync"),
+        mc(
+          "sync.Pool برای چیست؟",
+          ["cache دائمی اشیا", "کاهش allocation اشیای موقت", "محدود کردن هم‌زمانی", "pool اتصال دیتابیس"],
+          "کاهش allocation اشیای موقت",
+          "GC ممکن است Pool را خالی کند؛ cache نیست.",
+          "go-sync",
+        ),
+        mc(
+          "errgroup.WithContext در برابر WaitGroup چه اضافه می‌کند؟",
+          ["هیچ", "اولین خطا و لغو ctx بقیه", "اجرای ترتیبی", "retry خودکار"],
+          "اولین خطا و لغو ctx بقیه",
+          "با SetLimit هم‌زمانی را هم محدود می‌کند.",
+          "go-patterns",
+        ),
+        sa("از Go 1.21 کدام تابع sync مقدار lazy و thread-safe برمی‌گرداند؟", "sync.OnceValue", "OnceValue / OnceValues / OnceFunc", "go-sync"),
+      ],
+    },
+  }),
+
+  day({
+    dayNumber: 16,
+    phaseSlug: "go-concurrency",
+    titleFa: "الگوهای production: worker pool، pipeline و shutdown",
+    objectiveFa: "هم‌زمانی محدود، توقف روی اولین خطا، backpressure و graceful shutdown را پیاده و توضیح دهید.",
     topicSlugs: ["go-patterns", "go-goroutines", "go-context"],
     lessons: [
       goLesson({
         slug: "worker-pool-fan",
         topicSlug: "go-patterns",
-        titleFa: "Worker pool و fan-out/fan-in",
-        objectiveFa: "محدود کردن parallelism و merge ایمن چند producer را پیاده‌سازی کنید.",
-        theoryMd: `## اهداف یادگیری
-- jobs/results channel با N worker
-- fan-out: چند worker روی یک jobs
-- fan-in: merge با WaitGroup + یک output channel
+        titleFa: "Worker pool، fan-out/fan-in و backpressure",
+        objectiveFa: "محدود کردن parallelism و merge ایمن چند producer را پیاده کنید.",
+        theoryMd: `## چرا مهم است
+«برای هر آیتم یک goroutine» تا وقتی کار می‌کند که آیتم‌ها ۱۰ تا باشند. با ۱۰۰ هزار آیتم، ۱۰۰ هزار connection هم‌زمان به سرویس پایین‌دستی می‌زنید و خودتان یک DDoS درست کرده‌اید.
 
-## کاربرد واقعی
-پردازش batch upload، crawl URL، consumer Kafka با ثابت parallelism.
+## دو شکل محدودسازی
+1. **Worker pool ثابت:** N goroutine از یک channel jobs می‌خوانند. مناسب stream طولانی مثل consumer صف.
+2. **Semaphore:** \`sem := make(chan struct{}, N)\` قبل از هر کار acquire و بعدش release. مناسب batch محدود. errgroup با \`SetLimit\` همین است.
 
-## اشتباهات رایج
-- بستن jobs قبل از اتمام enqueue
-- تعداد worker = تعداد item بدون cap روی memory
+## جزئیاتی که مصاحبه‌گر می‌سنجد
+- **ترتیب خروجی:** نتیجه را در \`out[i]\` بنویسید. هر index فقط یک نویسنده دارد، پس به lock نیازی نیست.
+- **توقف روی اولین خطا:** cancel کردن ctx مشترک به همراه \`sync.Once\` برای ثبت اولین خطا، و توقف تغذیهٔ jobs.
+- **هیچ goroutine نباید بماند:** feeder باید روی \`ctx.Done()\` هم select کند، وگرنه وقتی workerها رفته‌اند روی send گیر می‌کند.
+- **Backpressure:** channel بدون buffer یا با buffer کوچک، تا کندی consumer به producer منتقل شود.
 
-## سؤالات مصاحبه
-1. semaphore با buffered channel چطور کار می‌کند؟
-2. تفاوت errgroup و WaitGroup؟`,
-        practicalMd: `pool با 5 worker و ctx cancel در وسیلهٔ کار طراحی کنید.`,
-        exampleMd: `\`\`\`go
-sem := make(chan struct{}, 10)
-sem <- struct{}{}
-defer func() { <-sem }()
-\`\`\``,
+## سؤال مصاحبه
+**«۱۰۰ هزار URL را با حداکثر ۵۰ درخواست هم‌زمان crawl کنید و در اولین خطای ۵xx متوقف شوید.»**
+دقیقاً لب امروز به همراه یک http.Client با timeout.`,
+        practicalMd: `قبل از لب، نمودار goroutineها و channelها را بکشید: feeder، channel jobs، N worker و جای cancel.`,
+        exampleMd: `~~~go
+feed:
+for i := range items {
+	select {
+	case jobs <- i:
+	case <-ctx.Done():
+		break feed // بدون این، feeder بعد از خطا گیر می‌کند
+	}
+}
+close(jobs)
+wg.Wait()
+~~~`,
       }),
       goLesson({
         slug: "rate-limit-shutdown",
         topicSlug: "go-patterns",
-        titleFa: "Rate limiter و graceful shutdown",
-        objectiveFa: "token bucket با time.Ticker و shutdown HTTP server را بدانید.",
-        theoryMd: `## اهداف یادگیری
-- rate.Limiter از x/time/rate
-- http.Server Shutdown با context
-- جمع‌آوری در-flight قبل از exit
+        titleFa: "Graceful shutdown برای سرویس با worker",
+        objectiveFa: "ترتیب درست توقف HTTP server، workerها و منابع را بدانید.",
+        theoryMd: `## ترتیب درست shutdown
+1. دریافت SIGTERM با \`signal.NotifyContext(ctx, syscall.SIGTERM, os.Interrupt)\`
+2. readiness را fail کنید و چند ثانیه صبر کنید تا load balancer یا Kubernetes ترافیک را قطع کند.
+3. \`srv.Shutdown(ctx)\` **با timeout**: listener بسته می‌شود و درخواست‌های در جریان تمام می‌شوند.
+4. لغو ctx workerها، توقف دریافت پیام جدید از صف و \`wg.Wait()\` برای کارهای در جریان.
+5. بستن منابع به ترتیب معکوس ساخت: producer صف، DB pool و flush لاگ و trace.
+6. همه باید زیر \`terminationGracePeriodSeconds\` تمام شوند (پیش‌فرض ۳۰ ثانیه).
 
-## کاربرد واقعی
-API public، protection از downstream، deploy بدون قطع ناگهانی.
+## خطاهای رایج
+- \`srv.Shutdown(context.Background())\`: اگر درخواستی گیر کند، برای همیشه منتظر می‌ماند و در نهایت SIGKILL می‌خورد.
+- \`log.Fatal(srv.ListenAndServe())\`: بعد از Shutdown، ListenAndServe بلافاصله \`http.ErrServerClosed\` برمی‌گرداند و log.Fatal بدون اجرای deferها خارج می‌شود.
+- Shutdown اتصال‌های hijack‌شده (WebSocket) را نمی‌بندد. باید \`RegisterOnShutdown\` را صدا زد.
 
-## اشتباهات
-- Shutdown بدون timeout
-- بستن listener قبل از drain در-flight
+## سؤال مصاحبه
+**«هنگام rolling update چند ۵۰۲ می‌بینیم. چرا؟»**
+پاسخ: pod قبل از اینکه از endpointها حذف شود، connection را قطع کرده است. باید یک preStop یا تأخیر بعد از fail کردن readiness داشت، بعد Shutdown با timeout.`,
+        practicalMd: `main یک سرویس با HTTP server و یک consumer صف را بنویسید که مراحل بالا را رعایت کند (فقط ساختار).`,
+        exampleMd: `~~~go
+ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+defer stop()
 
-## سؤالات مصاحبه
-1. تفاوت leaky bucket و token bucket؟
-2. چطور worker pool را با SIGTERM متوقف می‌کنید؟`,
-        practicalMd: `ترتیب: signal → cancel ctx → Shutdown → WaitGroup workers را لیست کنید.`,
-        exampleMd: `\`\`\`go
-limiter := rate.NewLimiter(rate.Limit(10), 20)
-if err := limiter.Wait(ctx); err != nil { return err }
-\`\`\``,
+go func() {
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Error("listen", "err", err)
+		stop()
+	}
+}()
+
+<-ctx.Done()
+shutdownCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+defer cancel()
+_ = srv.Shutdown(shutdownCtx)
+workersCancel()
+wg.Wait()
+_ = db.Close()
+~~~`,
       }),
     ],
     exercises: [
-      noteExercise({
-        titleFa: "semaphore با channel",
+      goLab({
+        lab: "worker-pool",
+        titleFa: "لب: Map هم‌زمان با سقف، ترتیب و توقف روی خطا",
         topicSlug: "go-patterns",
         lessonSlug: "worker-pool-fan",
-        path: "/tmp/go-day14-sem.txt",
-        mustContain: "buffered",
-        instructionsMd: `semaphore با buffered channel و cap ثابت توضیح دهید؛ buffered را در فایل بیاورید.`,
-      }),
-      noteExercise({
-        titleFa: "چک‌لیست shutdown",
-        topicSlug: "go-patterns",
-        lessonSlug: "rate-limit-shutdown",
-        path: "/tmp/go-day14-shutdown.txt",
-        mustContain: "Shutdown",
-        instructionsMd: `مراحل graceful shutdown برای http.Server را بنویسید و Shutdown را ذکر کنید.`,
+        instructionsMd: `تابع generic \`Map\` را بدون errgroup و فقط با stdlib پیاده کنید. این عملاً پیاده‌سازی errgroup با SetLimit است. تست‌ها هم‌زمانی واقعی، سقف هم‌زمانی، ترتیب نتایج، توقف روی اولین خطا، لغو ctx و نبود goroutine باقی‌مانده را با \`-race\` می‌سنجند.`,
+        hints: [
+          "اجزا: ctx فرزند با cancel، channel jobs از نوع اندیس (int)، N worker با WaitGroup، و sync.Once برای ثبت اولین خطا.",
+          "feeder باید روی jobs <- i و ctx.Done() select کند و بعد jobs را close کند. workerها نتیجه را در out[i] بنویسند.",
+          "بعد از wg.Wait(): اگر firstErr != nil آن را برگردانید؛ وگرنه اگر ctx.Err() != nil (لغو والد) آن را؛ وگرنه out. workers < 1 را برابر 1 بگیرید.",
+        ],
+        race: true,
+        difficulty: "hard",
+        maxScore: 25,
       }),
     ],
     scenario: noteScenario({
       titleFa: "Queue backlog و OOM",
-      path: "/tmp/go-day14-scenario.txt",
-      mustContain: "worker pool",
-      incidentMd: "consumer نمی‌تواند با producer همگام شود؛ latency صف ساعت‌هاست.",
-      symptomsMd: "memory به خاطر buffer بی‌نهایت jobs؛ downstream rate limit شده.",
-      rootCause: "unbounded channel برای jobs بدون worker pool و backpressure به producer",
+      path: "/tmp/go-day16-scenario.txt",
+      mustContain: "backpressure",
+      incidentMd: "consumer ارسال SMS از صف عقب افتاده و هر چند ساعت با OOM restart می‌شود.",
+      symptomsMd: "کد: برای هر پیام دریافتی یک goroutine؛ prefetch صف ۱۰ هزار؛ اپراتور پیام‌رسان rate limit کرده و پاسخ‌ها کند شده‌اند.",
+      rootCause: "هم‌زمانی نامحدود و prefetch بزرگ؛ نبود worker pool و backpressure به صف",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۴ — الگوها",
+      titleFa: "آزمون — الگوها",
       questions: [
         mc(
-          "محدود کردن ۱۰۰ concurrent call همزمان؟",
-          ["sync.Once", "buffered chan struct{} با cap 100", "close(channel)", "atomic only"],
-          "buffered chan struct{} با cap 100",
-          "کلاسیک semaphore pattern در Go.",
+          "محدود کردن به ۱۰۰ فراخوانی هم‌زمان؟",
+          ["sync.Once", "chan struct{} با buffer صد به‌عنوان semaphore", "close(channel)", "runtime.Gosched"],
+          "chan struct{} با buffer صد به‌عنوان semaphore",
+          "الگوی کلاسیک semaphore؛ یا errgroup.SetLimit.",
           "go-patterns",
         ),
-        tf("fan-in همیشه نیاز به mutex دارد.", false, "می‌توان با یک goroutine و select merge کرد.", "go-patterns"),
+        tf("http.Server.Shutdown با context.Background() در production ایمن است.", false, "بدون timeout ممکن است برای همیشه منتظر بماند تا SIGKILL.", "go-patterns"),
         mc(
-          "برای rate limit استاندارد در Go؟",
-          ["math/rand", "golang.org/x/time/rate", "sync.Map", "unsafe"],
-          "golang.org/x/time/rate",
-          "Token bucket آماده و thread-safe.",
+          "چرا feeder باید روی ctx.Done() هم select کند؟",
+          ["برای سرعت بیشتر", "تا بعد از توقف workerها روی send گیر نکند", "برای ترتیب نتایج", "الزامی نیست"],
+          "تا بعد از توقف workerها روی send گیر نکند",
+          "وگرنه goroutine leak و Map هرگز برنمی‌گردد.",
           "go-patterns",
         ),
-        sa("قبل از exit process چه متدی listener HTTP را graceful می‌بندد؟", "Shutdown", "Server.Shutdown با context.", "go-patterns"),
+        sa("بعد از Shutdown، ListenAndServe چه خطایی برمی‌گرداند؟", "http.ErrServerClosed", "باید آن را خطای واقعی حساب نکرد.", "go-patterns"),
       ],
     },
   }),

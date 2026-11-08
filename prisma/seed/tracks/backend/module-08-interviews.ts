@@ -2,7 +2,7 @@ import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } f
 
 export const interviewDays: DaySeed[] = [
   day({
-    dayNumber: 42,
+    dayNumber: 46,
     phaseSlug: "mock-interviews",
     titleFa: "مصاحبه: مبانی Go و هم‌زمانی",
     objectiveFa:
@@ -70,7 +70,7 @@ jobs := make(chan int, 8)
         hints: [
           { level: 1, textFa: "با تعریف یک‌خطی شروع کنید؛ بعد بگویید چه چیزی باعث escape می‌شود." },
           { level: 2, textFa: "از کلمات stack، heap و GC در پاسخ استفاده کنید." },
-          { level: 3, textFa: `printf 'pointer return => heap\\n' > /tmp/iv-day42-escape.txt` },
+          { level: 3, textFa: "پاسخ نمونه: escape analysis تصمیم زمان کامپایل است که متغیر روی stack بماند یا به heap برود. اگر کامپایلر نتواند ثابت کند متغیر بعد از return استفاده نمی‌شود (pointer برگردانده‌شده، interface، closure که goroutine آن را نگه می‌دارد، اندازهٔ پویا)، آن را به heap می‌برد. heap یعنی فشار GC و latency. ابزار: go build -gcflags=-m." },
         ],
       }),
       noteExercise({
@@ -83,7 +83,7 @@ jobs := make(chan int, 8)
         hints: [
           { level: 1, textFa: "unbuffered را به عنوان همگام‌سازی دو goroutine توصیف کنید." },
           { level: 2, textFa: "واژهٔ happens-before را صریحاً در متن بیاورید." },
-          { level: 3, textFa: `echo 'send/recv on unbuffered gives happens-before' > /tmp/iv-day42-channel.txt` },
+          { level: 3, textFa: "پاسخ نمونه: در unbuffered، send تا رسیدن receiver منتظر می‌ماند (rendezvous)؛ در buffered تا پر شدن buffer منتظر نمی‌ماند. send روی channel نسبت به receive متناظرش happens-before دارد؛ در unbuffered، receive هم نسبت به پایان send happens-before دارد. close نسبت به receiveای که zero value به خاطر close می‌گیرد happens-before دارد." },
         ],
       }),
     ],
@@ -98,7 +98,7 @@ jobs := make(chan int, 8)
       rootCause: "نبود مثال تولیدی و نادیده گرفتن ابعاد observability",
     }),
     exam: {
-      titleFa: "آزمون روز ۴۲ — Go و concurrency",
+      titleFa: "آزمون — Go و concurrency",
       questions: [
         mc(
           "کدام گزینه برای ایجاد happens-before بین دو goroutine درست‌تر است؟",
@@ -121,7 +121,7 @@ jobs := make(chan int, 8)
     },
   }),
   day({
-    dayNumber: 43,
+    dayNumber: 47,
     phaseSlug: "mock-interviews",
     titleFa: "مصاحبه: الگوریتم و دیتابیس",
     objectiveFa: "پیچیدگی، ساختمان داده و تصمیم‌های دیتابیس را در قالب مصاحبه Backend بیان کنید.",
@@ -177,7 +177,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
         hints: [
           { level: 1, textFa: "slice linear scan؛ map تقریباً O(1) average." },
           { level: 2, textFa: "حتماً O(n) برای slice ذکر شود." },
-          { level: 3, textFa: `echo 'slice lookup O(n)' > /tmp/iv-day43-algo.txt` },
+          { level: 3, textFa: "پاسخ نمونه: جست‌وجو در slice نامرتب O(n) است (اسکن خطی)؛ در map میانگین O(1) و بدترین حالت O(n) با تصادم. trade-off: map حافظهٔ بیشتر و ترتیب ندارد؛ برای n کوچک (کمتر از حدود ۱۰ تا ۲۰) اسکن slice به خاطر cache locality حتی سریع‌تر است." },
         ],
       }),
       noteExercise({
@@ -190,7 +190,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
         hints: [
           { level: 1, textFa: "sequential scan vs index seek." },
           { level: 2, textFa: "از composite index در WHERE + ORDER BY یاد کنید." },
-          { level: 3, textFa: `echo 'add btree index' > /tmp/iv-day43-index.txt` },
+          { level: 3, textFa: "پاسخ نمونه: بدون index، DB کل جدول را می‌خواند (Seq Scan با O(n)). index B-Tree جست‌وجو را O(log n) می‌کند. برای WHERE a=? ORDER BY b index ترکیبی (a, b) هم فیلتر و هم مرتب‌سازی را پوشش می‌دهد. با EXPLAIN ANALYZE تأیید کنید؛ هزینه: کندتر شدن نوشتن و حافظهٔ بیشتر." },
         ],
       }),
     ],
@@ -203,7 +203,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
       rootCause: "نادیده گرفتن بخش communicate و trade-off",
     }),
     exam: {
-      titleFa: "آزمون روز ۴۳ — الگوریتم و DB",
+      titleFa: "آزمون — الگوریتم و DB",
       questions: [
         sa("پیچیدگی merge sort چیست؟", "O(n log n)", "مرتب‌سازی تقسیم‌و‌حل", "algo-complexity"),
         mc(
@@ -227,7 +227,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
     },
   }),
   day({
-    dayNumber: 44,
+    dayNumber: 48,
     phaseSlug: "mock-interviews",
     titleFa: "مصاحبه: طراحی سیستم (URL Shortener)",
     objectiveFa: "یک سؤال طراحی سیستم را از requirements تا deep dive (مثلاً کوتاه‌کننده URL) کامل جلو ببرید.",
@@ -283,7 +283,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
         hints: [
           { level: 1, textFa: "create نیاز به body دارد؛ redirect با GET." },
           { level: 2, textFa: "POST /api/v1/links و GET /:code" },
-          { level: 3, textFa: `echo 'POST creates short link' > /tmp/iv-day44-api.txt` },
+          { level: 3, textFa: "پاسخ نمونه: POST /api/v1/links با بدنهٔ {url} پاسخ 201 و {code, short_url} برمی‌گرداند؛ GET /{code} پاسخ 302 با هدر Location می‌دهد (یا 301 اگر analytics لازم نیست)، و 404 یا 410 برای کد ناموجود یا منقضی." },
         ],
       }),
       noteExercise({
@@ -296,7 +296,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
         hints: [
           { level: 1, textFa: "اکثر ترافیک redirect است نه create." },
           { level: 2, textFa: "Redis/Memcached جلوی DB." },
-          { level: 3, textFa: `echo 'redirect served from cache' > /tmp/iv-day44-scale.txt` },
+          { level: 3, textFa: "پاسخ نمونه: نسبت خواندن به نوشتن حدود ۱۰۰ به ۱ است؛ redirectها از Redis (cache-aside، کلید code و مقدار url، با TTL) سرو می‌شوند تا DB فقط miss و create را ببیند. کلیدهای داغ: cache محلی در process یا CDN. negative cache برای کدهای ناموجود." },
         ],
       }),
     ],
@@ -310,9 +310,9 @@ ORM lazy load → query اضافه؛ حل: preload/join.
       rootCause: "نپرسیدن QPS و read/write ratio",
     }),
     exam: {
-      titleFa: "آزمون روز ۴۴ — طراحی سیستم",
+      titleFa: "آزمون — طراحی سیستم",
       questions: [
-        sa("در CAP durante partition کدام دو را trade-off می‌کنیم؟", "consistency availability", "CP یا AP", "sd-fundamentals"),
+        sa("در CAP هنگام partition کدام دو را trade-off می‌کنیم؟", "consistency availability", "CP یا AP", "sd-fundamentals"),
         mc(
           "برای جلوگیری از hot key در sharded cache چه کمک می‌کند؟",
           ["یک shard", "replication + random salt در key", "حذف cache", "فقط SQL"],
@@ -333,7 +333,177 @@ ORM lazy load → query اضافه؛ حل: preload/join.
     },
   }),
   day({
-    dayNumber: 45,
+    dayNumber: 49,
+    phaseSlug: "mock-interviews",
+    titleFa: "مصاحبهٔ رفتاری و رهبری فنی (Senior)",
+    objectiveFa: "تجربه‌هایتان را با STAR و عدد روایت کنید و نشان دهید Senior یعنی ownership، تصمیم‌گیری و رشد دادن تیم.",
+    topicSlugs: ["iv-behavioral", "iv-full"],
+    lessons: [
+      goLesson({
+        slug: "iv-behavioral-star",
+        topicSlug: "iv-behavioral",
+        titleFa: "راند رفتاری: چه چیزی Senior را از Mid جدا می‌کند",
+        objectiveFa: "داستان‌های آماده با ساختار STAR داشته باشید و سیگنال‌های Senior را در آن‌ها نشان دهید.",
+        theoryMd: `## چرا این راند تعیین‌کننده است
+در شرکت‌های بزرگ (اسنپ، دیجی‌کالا، بانک‌ها و فین‌تک‌ها) خیلی وقت‌ها **سطح** (Mid یا Senior) در راند رفتاری و System Design تعیین می‌شود، نه در کدنویسی. کد خوب شما را Mid می‌کند؛ اینکه چطور تصمیم گرفتید، ریسک را مدیریت کردید و دیگران را بالا کشیدید شما را Senior می‌کند.
+
+## ساختار STAR (با تأکید بر R)
+- **Situation** (۱ تا ۲ جمله): بستر و مقیاس. «سرویس ارسال پیامک با ۲ هزار درخواست در ثانیه...»
+- **Task**: مسئولیت **شما**، نه تیم.
+- **Action** (بیشترین زمان): تصمیم‌ها، گزینه‌های ردشده و چرا. «من» بگویید، نه «ما».
+- **Result**: **عدد**. p99 از ۸۰۰ به ۱۲۰ میلی‌ثانیه، هزینهٔ زیرساخت ۳۰٪ کمتر، incidentها از ۴ به ۰ در ماه. و درسی که گرفتید.
+
+## سیگنال‌های Senior که مصاحبه‌گر دنبالشان است
+1. **Ownership:** مشکلی که مال شما نبود را تا آخر پیگیری کردید.
+2. **Trade-off آگاهانه:** «X را انتخاب کردیم چون...، هزینه‌اش Y بود و این‌طور مدیریتش کردیم.»
+3. **ابهام:** نیازمندی گنگ را به طرح قابل اجرا تبدیل کردید (design doc یا RFC).
+4. **تأثیر فراتر از کد خودتان:** code review، mentoring، استاندارد تیم (linter، CI، runbook).
+5. **مدیریت incident:** آرامش، ارتباط شفاف با ذی‌نفعان و postmortem بدون مقصرتراشی.
+6. **اختلاف نظر:** «disagree and commit» با داده، نه با سمت.
+
+## بانک داستان (قبل از مصاحبه آماده کنید)
+۶ داستان که هر کدام چند سؤال را پوشش دهد:
+| داستان | سؤال‌هایی که جواب می‌دهد |
+|---|---|
+| سخت‌ترین incident | فشار، دیباگ، ارتباط |
+| یک تصمیم فنی بزرگ | trade-off، تأثیر، اقناع |
+| یک شکست یا اشتباه | یادگیری، صداقت |
+| اختلاف با همکار یا مدیر | تعارض، تأثیرگذاری |
+| رشد دادن یک نفر | mentoring و رهبری |
+| بهبودی که خودتان شروع کردید | ownership |
+
+## اشتباهات رایج
+- داستان بدون عدد و نتیجه.
+- «ما» در همهٔ جمله‌ها، طوری که نقش شما دیده نمی‌شود.
+- مقصر دانستن دیگران در داستان شکست.
+- داستان‌های قدیمی و کوچک برای سطح Senior.
+
+## سؤال‌های پرتکرار
+- «پیچیده‌ترین سیستمی که طراحی کردید را توضیح دهید.» (معمولاً ۲۰ دقیقه deep dive با سؤال‌های تعقیبی)
+- «زمانی که با تصمیم فنی تیم مخالف بودید؟»
+- «یک باگ production که شما ساختید؟»
+- «چطور کیفیت کد تیم را بالا بردید؟»
+- «یک کار را با deadline سخت چطور اولویت‌بندی کردید؟»`,
+        practicalMd: `داستان «سخت‌ترین incident» خود را با STAR بنویسید و حداقل دو عدد در Result بیاورید. اگر تجربهٔ کاری مرتبط ندارید، از capstone همین دوره استفاده کنید.`,
+        exampleMd: `~~~text
+S: سرویس ارسال پیامک، ۲k RPS، روزهای کمپین ۵ برابر.
+T: من on-call بودم؛ p99 تحویل به اپراتور به ۴۰ ثانیه رسیده بود.
+A: با pprof دیدم ۸۰ هزار goroutine منتظر کانکشن اپراتورند (بدون سقف هم‌زمانی).
+   worker pool با سقف per-operator و backpressure به صف گذاشتم؛ گزینهٔ
+   «افزایش pod» را رد کردم چون اپراتور rate limit داشت و مشکل بدتر می‌شد.
+R: p99 به ۱.۲ ثانیه رسید، retryهای اپراتور ۹۰٪ کم شد؛ runbook و alert روی
+   go_goroutines اضافه کردم و در postmortem تیم را با الگو آشنا کردم.
+~~~`,
+      }),
+      goLesson({
+        slug: "iv-tech-leadership",
+        topicSlug: "iv-behavioral",
+        titleFa: "رهبری فنی: design doc، code review و mentoring",
+        objectiveFa: "نشان دهید چطور تصمیم‌های فنی را مستند، بازبینی و در تیم جاری می‌کنید.",
+        theoryMd: `## Design doc یا RFC
+برای هر تغییری که بیش از یک sprint طول می‌کشد یا چند تیم را درگیر می‌کند:
+1. **Context و مسئله** (با عدد)
+2. **اهداف و non-goals** (non-goal ها مهم‌ترند)
+3. **گزینه‌ها** (حداقل دو) با trade-off
+4. **طرح انتخابی**: API، داده، migration و rollout
+5. **ریسک‌ها**، rollback، observability و هزینه
+6. سؤال‌های باز
+
+## Code review در سطح Senior
+- اولویت: **درستی و امنیت**، سپس طراحی و قابلیت نگهداری، سپس خوانایی، و در آخر سلیقه.
+- سلیقه را به linter بسپارید، نه به کامنت review.
+- کامنت سؤالی و آموزشی («اگر X رخ دهد چه می‌شود؟») به جای دستوری. nit را برچسب بزنید.
+- PR کوچک بخواهید و خودتان بدهید (کمتر از ۴۰۰ خط).
+- چیزهایی که در Go می‌بینید: goroutine بدون مسیر خروج، ctx پاس‌داده‌نشده، خطای بلعیده‌شده، lock زیر I/O و interface بی‌جا.
+
+## Mentoring و استاندارد تیم
+- pair programming روی کار واقعی، نه سخنرانی.
+- استانداردها را **کد کنید**: template سرویس، config مشترک golangci-lint، CI مشترک و runbook.
+- incident review بدون مقصرتراشی و با action item دارای مالک و تاریخ.
+
+## تخمین و اولویت‌بندی
+تخمین با بازه («۳ تا ۵ روز، ریسک اصلی migration است»)، شکستن کار، و تحویل تدریجی پشت feature flag.
+
+## سؤال مصاحبه
+**«یک Junior PR بزرگی فرستاده که طراحی‌اش مشکل دارد. چه می‌کنید؟»**
+پاسخ: قبل از کامنت‌های ریز، یک گفت‌وگوی کوتاه دربارهٔ طراحی (یا جلسهٔ ۱۵ دقیقه‌ای). مشکل اصلی و دلیلش را توضیح می‌دهم، پیشنهاد شکستن PR می‌دهم و کمک می‌کنم نسخهٔ اول را merge کند. هدف یاد گرفتن اوست، نه کد بی‌نقص من.`,
+        practicalMd: `یک design doc یک‌صفحه‌ای برای «اضافه کردن outbox به سرویس سفارش» با بخش‌های بالا بنویسید.`,
+        exampleMd: `~~~text
+Non-goals: تغییر schema رویدادهای فعلی؛ مهاجرت به CDC.
+Rollout: ۱) جدول outbox  ۲) نوشتن دوگانه پشت flag  ۳) relay در shadow mode
+         ۴) مقایسهٔ تعداد رویدادها  ۵) حذف producer مستقیم
+Rollback: خاموش کردن flag؛ relay idempotent است.
+~~~`,
+      }),
+    ],
+    exercises: [
+      noteExercise({
+        titleFa: "بانک داستان STAR",
+        topicSlug: "iv-behavioral",
+        lessonSlug: "iv-behavioral-star",
+        path: "/tmp/iv-behavioral-stories.txt",
+        mustContain: "Result",
+        instructionsMd: `سه داستان (incident، تصمیم فنی بزرگ، و یک شکست) را با برچسب‌های Situation، Task، Action و Result بنویسید. هر Result حداقل یک عدد داشته باشد و در Action حداقل یک گزینهٔ ردشده و دلیلش بیاید.`,
+        difficulty: "hard",
+        maxScore: 20,
+        answerOutlineFa:
+          "هر داستان: S کوتاه با مقیاس؛ T مسئولیت شخصی؛ A تصمیم‌ها با «من» و گزینهٔ ردشده و دلیلش؛ R با عدد (latency، هزینه، تعداد incident) و یک درس. داستان شکست باید مسئولیت‌پذیری و تغییر رفتار بعدی را نشان دهد.",
+      }),
+      noteExercise({
+        titleFa: "code review یک PR",
+        topicSlug: "iv-behavioral",
+        lessonSlug: "iv-tech-leadership",
+        path: "/tmp/iv-behavioral-review.txt",
+        mustContain: "context",
+        instructionsMd: `برای این تکه کد سه کامنت review بنویسید: یکی blocking، یکی پیشنهادی و یکی nit. لحن آموزشی باشد.
+
+~~~go
+func (s *Service) Notify(userIDs []int64, msg string) {
+	for _, id := range userIDs {
+		go func(id int64) {
+			u, _ := s.users.Get(context.Background(), id)
+			s.sms.Send(u.Phone, msg)
+		}(id)
+	}
+}
+~~~`,
+        answerOutlineFa:
+          "blocking: goroutine نامحدود بدون سقف و بدون انتظار؛ خطای Get بلعیده شده و u خالی ارسال می‌شود؛ context.Background به جای ctx caller. پیشنهادی: worker pool یا errgroup با SetLimit و برگرداندن خطا؛ idempotency برای ارسال. nit: نام msg را به body تغییر دهید و تابع ctx بگیرد.",
+      }),
+    ],
+    scenario: noteScenario({
+      titleFa: "یادداشت پنل — راند رفتاری",
+      path: "/tmp/iv-behavioral-panel.txt",
+      mustContain: "ownership",
+      incidentMd: "**بازخورد پنل:** «فنی قوی است ولی در داستان‌ها نقش خودش مشخص نبود و هیچ عدد یا نتیجه‌ای نگفت. سطح پیشنهادی: Mid.»",
+      symptomsMd: "همهٔ پاسخ‌ها با «ما» شروع شدند؛ داستان incident بدون نتیجهٔ قابل اندازه‌گیری؛ هیچ اشاره‌ای به trade-off یا گزینهٔ ردشده نبود.",
+      rootCause: "نبود بانک داستان آماده با STAR؛ ownership و تأثیر شخصی نشان داده نشد",
+    }),
+    exam: {
+      titleFa: "آزمون — رفتاری و رهبری",
+      questions: [
+        mc(
+          "کدام بخش STAR در سطح Senior بیشترین وزن را دارد؟",
+          ["Situation", "Task", "Action و Result با عدد", "هیچ‌کدام"],
+          "Action و Result با عدد",
+          "تصمیم‌ها، trade-off و تأثیر قابل اندازه‌گیری.",
+          "iv-behavioral",
+        ),
+        tf("در داستان رفتاری بهتر است همیشه «ما» بگویید تا تیمی به نظر برسید.", false, "مصاحبه‌گر باید نقش شخصی شما را ببیند.", "iv-behavioral"),
+        mc(
+          "مهم‌ترین بخش design doc که اغلب جا می‌افتد؟",
+          ["فونت", "non-goals و گزینه‌های ردشده", "اسم پروژه", "تاریخچهٔ شرکت"],
+          "non-goals و گزینه‌های ردشده",
+          "دامنه را محدود و تصمیم را قابل دفاع می‌کند.",
+          "iv-behavioral",
+        ),
+        tf("اختلاف سلیقه در فرمت کد بهتر است در code review بحث شود.", false, "به gofmt و linter بسپارید.", "iv-behavioral"),
+      ],
+    },
+  }),
+
+  day({
+    dayNumber: 50,
     phaseSlug: "mock-interviews",
     titleFa: "Mock کامل Senior Backend + شبیه‌ساز درون‌برنامه",
     objectiveFa:
@@ -358,7 +528,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
 ## استفاده از شبیه‌ساز
 منوی **مصاحبه آزمایشی** → حالت سریع (۱۰) یا استاندارد (۲۰) → پس از هر سؤال بازخورد AI → گزارش نهایی با درس پیشنهادی.`,
         practicalMd: `یک بار حالت quick شبیه‌ساز را اجرا کنید و ضعف دسته‌ای را یادداشت کنید.`,
-        exampleMd: `پس از session روز ۴۳ یا ۴۴ را برای مرور پیشنهاد می‌دهد.`,
+        exampleMd: `پس از session، روزهای مرتبط با ضعیف‌ترین دسته را برای مرور پیشنهاد می‌دهد.`,
       }),
       goLesson({
         slug: "iv-backend-production",
@@ -372,7 +542,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
 - SRE: latency/traffic/errors/saturation
 
 ## behavioral فنی
-«آخرین incident شما؟» → STAR با متریک قبل/بعد`,
+«آخرین incident شما؟»: پاسخ با STAR و متریک قبل و بعد (جزئیات در روز «مصاحبهٔ رفتاری و رهبری فنی»).`,
         practicalMd: `یک پاراگراف دربارهٔ graceful shutdown در Go HTTP server بنویسید.`,
         exampleMd: `signal.Notify + Server.Shutdown(ctx)`,
       }),
@@ -388,7 +558,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
         hints: [
           { level: 1, textFa: "حالت standard هفتگی یک بار." },
           { level: 2, textFa: "کلمهٔ simulator را در متن بیاورید." },
-          { level: 3, textFa: `echo 'weekly simulator standard mode' > /tmp/iv-day45-self.txt` },
+          { level: 3, textFa: "پاسخ نمونه: هر هفته یک simulator در حالت standard؛ دو دستهٔ ضعیف گزارش را انتخاب می‌کنم، روزهای پیشنهادی را مرور و لب‌هایشان را دوباره بدون hint حل می‌کنم؛ هفتهٔ بعد مقایسه می‌کنم." },
         ],
       }),
       noteExercise({
@@ -401,7 +571,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
         hints: [
           { level: 1, textFa: "از Google SRE book." },
           { level: 2, textFa: "latency, traffic, errors, saturation" },
-          { level: 3, textFa: `echo 'latency traffic errors saturation' > /tmp/iv-day45-signals.txt` },
+          { level: 3, textFa: "پاسخ نمونه: latency (به تفکیک موفق و ناموفق، با p99)، traffic (RPS)، errors (نرخ ۵xx و خطاهای منطقی)، saturation (CPU، حافظه، pool دیتابیس، طول صف). برای هر کدام یک متریک Prometheus و یک آستانهٔ alert مبتنی بر SLO." },
         ],
       }),
     ],
@@ -415,7 +585,7 @@ ORM lazy load → query اضافه؛ حل: preload/join.
       rootCause: "نبود تمرین timed mock",
     }),
     exam: {
-      titleFa: "آزمون روز ۴۵ — Mock کامل",
+      titleFa: "آزمون — Mock کامل",
       questions: [
         mc(
           "بهترین مسیر تمرین هفتگی با این پلتفرم؟",

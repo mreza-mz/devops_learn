@@ -1,8 +1,8 @@
-import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
+import { day, goLab, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
 
 export const systemDesignDays: DaySeed[] = [
   day({
-    dayNumber: 30,
+    dayNumber: 32,
     phaseSlug: "system-design",
     titleFa: "نیازمندی‌ها، CAP و دسترس‌پذیری",
     objectiveFa: "FR/NFR، SLA/SLO، scalability و trade-offهای CAP را در مصاحبه ساختار دهید.",
@@ -51,7 +51,7 @@ export const systemDesignDays: DaySeed[] = [
       rootCause: "بدون SLO و capacity planning؛ sync call زنجیره‌ای",
     }),
     exam: {
-      titleFa: "آزمون روز ۳۰ — Fundamentals",
+      titleFa: "آزمون — Fundamentals",
       questions: [
         mc(
           "در CAP هنگام network partition بین C و A کدام انتخاب ضروری است؟",
@@ -74,7 +74,7 @@ export const systemDesignDays: DaySeed[] = [
   }),
 
   day({
-    dayNumber: 31,
+    dayNumber: 33,
     phaseSlug: "system-design",
     titleFa: "مقیاس‌پذیری: LB، cache، DB، queue",
     objectiveFa: "load balancing، sharding DB، message queue و caching لایه‌ای را ترکیب کنید.",
@@ -124,7 +124,7 @@ export const systemDesignDays: DaySeed[] = [
       rootCause: "counter/global feed در یک key — نیاز به shard یا local aggregate",
     }),
     exam: {
-      titleFa: "آزمون روز ۳۱ — Scaling",
+      titleFa: "آزمون — Scaling",
       questions: [
         mc(
           "هدف اصلی message queue در peak traffic؟",
@@ -147,7 +147,7 @@ export const systemDesignDays: DaySeed[] = [
   }),
 
   day({
-    dayNumber: 32,
+    dayNumber: 34,
     phaseSlug: "system-design",
     titleFa: "پروژه: URL Shortener و Rate Limiter",
     objectiveFa: "برای دو سرویس کلاسیک API، schema، bottlenecks و failure mode بنویسید.",
@@ -184,8 +184,11 @@ export const systemDesignDays: DaySeed[] = [
 - **Fixed/sliding window**: دقت counter
 
 ## Distributed
-- Redis INCR + TTL
-- **Race**: Lua script atomic
+- Redis INCR + TTL (fixed window؛ ساده ولی در مرز پنجره تا ۲ برابر عبور می‌دهد)
+- **Race**: GET و سپس SET از چند instance اتمیک نیست؛ منطق token bucket را در یک **Lua script** اجرا کنید (Redis آن را اتمیک اجرا می‌کند)
+- Sliding window log با sorted set (دقیق ولی پرهزینه در حافظه) در برابر sliding window counter (تقریبی و ارزان)
+- اگر Redis در دسترس نبود: fail-open (سرویس بالا می‌ماند) یا fail-closed (امن‌تر)؛ یک تصمیم کسب‌وکاری است و باید صریح باشد
+- پاسخ: 429 همراه با هدرهای Retry-After و RateLimit-*
 
 ## Placement
 - API Gateway یا sidecar middleware`,
@@ -201,6 +204,21 @@ export const systemDesignDays: DaySeed[] = [
         path: "/tmp/sd-day32-url-shortener.txt",
         mustContain: "302",
         instructionsMd: `FR، API endpoints، schema جدول links، cache و bottlenecks را بنویسید؛ کد وضعیت redirect 302 را ذکر کنید.`,
+      }),
+      goLab({
+        lab: "token-bucket",
+        titleFa: "لب: token bucket با ساعت قابل تزریق",
+        topicSlug: "sd-scaling",
+        lessonSlug: "project-rate-limiter",
+        instructionsMd: `قبل از طراحی نسخهٔ توزیع‌شده، token bucket درون‌حافظه‌ای را بنویسید (همان چیزی که در مصاحبه معمولاً اول می‌خواهند). ساعت تزریق می‌شود تا تست بدون sleep اجرا شود.
+
+بعد از حل: همین منطق را با Redis و یک Lua script اتمیک چطور توزیع‌شده می‌کنید؟ (در تمرین بعدی بنویسید.)`,
+        hints: [
+          "state: tokens (float64)، last (time.Time)، rate و burst؛ و یک sync.Mutex برای هم‌زمانی.",
+          "در Allow: elapsed := now().Sub(last).Seconds()؛ tokens = min(burst, tokens + elapsed*rate)؛ last = now.",
+          "اگر tokens >= 1 یکی کم کنید و true برگردانید، وگرنه false. limiter باید پر شروع شود (tokens = burst).",
+        ],
+        race: true,
       }),
       noteExercise({
         titleFa: "طراحی Rate Limiter",
@@ -220,7 +238,7 @@ export const systemDesignDays: DaySeed[] = [
       rootCause: "بدون abuse detection و blocklist async",
     }),
     exam: {
-      titleFa: "آزمون روز ۳۲ — Mini projects",
+      titleFa: "آزمون — Mini projects",
       questions: [
         mc(
           "redirect استاندارد short URL؟",
@@ -243,7 +261,7 @@ export const systemDesignDays: DaySeed[] = [
   }),
 
   day({
-    dayNumber: 33,
+    dayNumber: 35,
     phaseSlug: "system-design",
     titleFa: "Microservices، Gateway و Event-driven",
     objectiveFa: "service boundary، API gateway، circuit breaker و event-driven integration.",
@@ -310,7 +328,7 @@ export const systemDesignDays: DaySeed[] = [
       rootCause: "بدون circuit breaker و bulkhead روی dependency",
     }),
     exam: {
-      titleFa: "آزمون روز ۳۳ — Services",
+      titleFa: "آزمون — Services",
       questions: [
         mc(
           "Circuit breaker در حالت Open چه می‌کند؟",
@@ -333,9 +351,9 @@ export const systemDesignDays: DaySeed[] = [
   }),
 
   day({
-    dayNumber: 34,
+    dayNumber: 36,
     phaseSlug: "system-design",
-    titleFa: "Job Queue، Chat و E-commerce",
+    titleFa: "Job Queue، Distributed Lock، Chat و E-commerce",
     objectiveFa: "پروژه‌های job queue و chat؛ inventory و cart در ecommerce.",
     topicSlugs: ["sd-scaling", "sd-reliability"],
     lessons: [
@@ -356,6 +374,35 @@ export const systemDesignDays: DaySeed[] = [
 - Kafka/SQS/RabbitMQ انتخاب بر اساس ordering`,
         practicalMd: `retry policy و DLQ برای job تصویر thumbnail.`,
         exampleMd: `visibility timeout > max processing time`,
+      }),
+      goLesson({
+        slug: "distributed-locks",
+        topicSlug: "sd-reliability",
+        titleFa: "Distributed lock، lease و fencing token",
+        objectiveFa: "بدانید چرا قفل توزیع‌شده به‌تنهایی ایمن نیست و چطور با fencing token و قید DB ایمنش کنید.",
+        theoryMd: `## مسئله
+«فقط یک worker باید job تسویهٔ شبانه را اجرا کند» یا «یک سفارش نباید هم‌زمان دو بار پردازش شود».
+
+## گزینه‌ها
+- **Redis** با \`SET key token NX PX 30000\`، و آزادسازی با Lua که فقط اگر token مال خودتان است حذف کند. ساده است، ولی وقتی master قبل از replicate شدن lock بیفتد، تضمینش از بین می‌رود.
+- **etcd یا ZooKeeper** (lease و consensus): برای leader election مطمئن‌تر است. Kubernetes خودش از Lease استفاده می‌کند.
+- **Postgres advisory lock** (\`pg_try_advisory_lock\`): اگر از قبل Postgres دارید، ساده‌ترین گزینه است.
+
+## چرا lock کافی نیست (سؤال Senior)
+worker A قفل را می‌گیرد، ۴۰ ثانیه GC pause یا قطعی شبکه می‌خورد و lease (۳۰ ثانیه) منقضی می‌شود. worker B قفل را می‌گیرد. حالا A بیدار می‌شود و فکر می‌کند هنوز صاحب قفل است، و **هر دو می‌نویسند**.
+
+**Fencing token:** هر بار گرفتن قفل یک عدد صعودی می‌دهد. منبع (DB) نوشتن با token کوچک‌تر از آخرین token دیده‌شده را رد می‌کند:
+~~~sql
+UPDATE settlements SET ..., fence = $2 WHERE id = $1 AND fence <= $2;
+~~~
+
+## قاعدهٔ عملی
+اگر می‌شود، **صحت را به قید دیتابیس بسپارید** (unique constraint، شرط WHERE، version) و lock را فقط برای کارایی (جلوگیری از کار تکراری) نگه دارید.`,
+        practicalMd: `برای job تسویهٔ شبانه با سه replica، طراحی lock و fencing را بنویسید و بگویید اگر lock از دست برود چه اتفاقی می‌افتد.`,
+        exampleMd: `~~~go
+ok, err := rdb.SetNX(ctx, "lock:settlement", token, 30*time.Second).Result()
+// آزادسازی امن: فقط اگر value == token (اتمیک با Lua)
+~~~`,
       }),
       goLesson({
         slug: "project-chat-ecommerce",
@@ -395,7 +442,7 @@ export const systemDesignDays: DaySeed[] = [
       rootCause: "client resend بدون server-side message id dedup",
     }),
     exam: {
-      titleFa: "آزمون روز ۳۴ — Queue & Chat",
+      titleFa: "آزمون — Queue & Chat",
       questions: [
         mc(
           "Visibility timeout در queue برای چیست؟",
@@ -418,7 +465,7 @@ export const systemDesignDays: DaySeed[] = [
   }),
 
   day({
-    dayNumber: 35,
+    dayNumber: 37,
     phaseSlug: "system-design",
     titleFa: "Payments، SMS، Saga و Observability",
     objectiveFa: "طراحی payments و SMS gateway؛ saga، outbox و fault tolerance.",
@@ -481,7 +528,7 @@ export const systemDesignDays: DaySeed[] = [
       rootCause: "بدون Idempotency-Key در API و webhook duplicate",
     }),
     exam: {
-      titleFa: "آزمون روز ۳۵ — Reliability",
+      titleFa: "آزمون — Reliability",
       questions: [
         mc(
           "Outbox pattern مشکل چه چیزی را حل می‌کند؟",

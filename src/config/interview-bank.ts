@@ -5,7 +5,8 @@ export type InterviewCategory =
   | "database"
   | "system-design"
   | "backend"
-  | "problem-solving";
+  | "problem-solving"
+  | "behavioral";
 
 export type InterviewDifficulty = "easy" | "medium" | "hard";
 
@@ -33,16 +34,18 @@ export const INTERVIEW_CATEGORY_LABELS: Record<InterviewCategory, string> = {
   "system-design": "طراحی سیستم",
   backend: "Backend",
   "problem-solving": "حل مسئله",
+  behavioral: "رفتاری و رهبری",
 };
 
 export const INTERVIEW_LESSON_BY_CATEGORY: Record<InterviewCategory, { dayNumber: number; labelFa: string }> = {
-  "go-fundamentals": { dayNumber: 42, labelFa: "روز ۴۲ — مبانی و هم‌زمانی Go" },
-  concurrency: { dayNumber: 42, labelFa: "روز ۴۲ — مصاحبه هم‌زمانی" },
-  algorithms: { dayNumber: 43, labelFa: "روز ۴۳ — الگوریتم و دیتابیس" },
-  database: { dayNumber: 43, labelFa: "روز ۴۳ — مهندسی دیتابیس" },
-  "system-design": { dayNumber: 44, labelFa: "روز ۴۴ — طراحی سیستم" },
-  backend: { dayNumber: 45, labelFa: "روز ۴۵ — Backend تولیدی" },
-  "problem-solving": { dayNumber: 45, labelFa: "روز ۴۵ — حل مسئله مهندسی" },
+  "go-fundamentals": { dayNumber: 46, labelFa: "روز ۴۶ — مبانی و هم‌زمانی Go" },
+  concurrency: { dayNumber: 46, labelFa: "روز ۴۶ — مصاحبه هم‌زمانی" },
+  algorithms: { dayNumber: 47, labelFa: "روز ۴۷ — الگوریتم و دیتابیس" },
+  database: { dayNumber: 47, labelFa: "روز ۴۷ — مهندسی دیتابیس" },
+  "system-design": { dayNumber: 48, labelFa: "روز ۴۸ — طراحی سیستم" },
+  backend: { dayNumber: 50, labelFa: "روز ۵۰ — Backend تولیدی" },
+  "problem-solving": { dayNumber: 50, labelFa: "روز ۵۰ — حل مسئله مهندسی" },
+  behavioral: { dayNumber: 49, labelFa: "روز ۴۹ — مصاحبهٔ رفتاری و رهبری فنی" },
 };
 
 export const INTERVIEW_QUESTION_BANK: InterviewQuestion[] = [
@@ -365,6 +368,94 @@ export const INTERVIEW_QUESTION_BANK: InterviewQuestion[] = [
     promptFa: "روش ۵ چرا (5 whys) در RCA چگونه کار می‌کند؟",
     rubricFa: "زنجیرهٔ علت تا ریشهٔ سیستمی، نه مقصر شخصی.",
     expectedPoints: ["5 whys", "root cause"],
+  },
+  {
+    id: "go-07",
+    category: "go-fundamentals",
+    difficulty: "hard",
+    promptFa: "سرویس Go در Kubernetes مدام OOMKilled می‌شود ولی heap profile نشتی نشان نمی‌دهد. علت محتمل و راه‌حل؟",
+    rubricFa: "رشد heap تا حدود ۲ برابر heap زنده با GOGC=100، بی‌خبری runtime از limit کانتینر، GOMEMLIMIT حدود ۹۰٪ limit، و ریسک GC مداوم نزدیک سقف.",
+    expectedPoints: ["GOMEMLIMIT", "GOGC", "heap", "limit"],
+  },
+  {
+    id: "go-08",
+    category: "go-fundamentals",
+    difficulty: "medium",
+    promptFa: "خروجی a := make([]int, 3, 10); b := append(a, 1); c := append(a, 2); fmt.Println(b[3]) چیست و چرا؟",
+    rubricFa: "۲؛ چون cap جا دارد هر دو append در آرایهٔ مشترک می‌نویسند؛ راه‌حل: کپی یا full slice expression.",
+    expectedPoints: ["2", "cap", "backing array", "copy"],
+  },
+  {
+    id: "conc-07",
+    category: "concurrency",
+    difficulty: "hard",
+    promptFa: "singleflight را بدون کتابخانه پیاده کنید و بگویید چه مشکلی را حل می‌کند و چه مشکلی را نه.",
+    rubricFa: "map از کلید به call زیر mutex، WaitGroup در call، حذف کلید بعد از اتمام؛ حل cache stampede؛ cache نمی‌کند و کندی یک call به همه منتقل می‌شود.",
+    expectedPoints: ["mutex", "waitgroup", "stampede", "map"],
+  },
+  {
+    id: "conc-08",
+    category: "concurrency",
+    difficulty: "medium",
+    promptFa: "panic در goroutineای که داخل یک HTTP handler ساخته‌اید چه اثری دارد؟",
+    rubricFa: "کل process خاتمه می‌یابد؛ recover در net/http فقط goroutine خود handler را پوشش می‌دهد؛ هر goroutine recover خودش را لازم دارد و باید خطا را گزارش کند.",
+    expectedPoints: ["process", "recover", "goroutine"],
+  },
+  {
+    id: "be-07",
+    category: "backend",
+    difficulty: "medium",
+    promptFa: "http.Server و http.Client پیش‌فرض Go چه مشکلاتی در production دارند و چه تنظیماتی می‌دهید؟",
+    rubricFa: "نبود timeout در Server (به‌ویژه ReadHeaderTimeout و Slowloris) و DefaultClient؛ Transport مشترک، MaxIdleConnsPerHost (پیش‌فرض ۲)، بستن و خواندن body.",
+    expectedPoints: ["ReadHeaderTimeout", "timeout", "MaxIdleConnsPerHost", "Body.Close"],
+  },
+  {
+    id: "be-08",
+    category: "backend",
+    difficulty: "hard",
+    promptFa: "چطور مطمئن می‌شوید رویداد order.created بعد از ثبت سفارش نه گم شود و نه دو بار اثر بگذارد؟",
+    rubricFa: "مشکل dual-write، outbox در همان تراکنش، relay با SKIP LOCKED یا CDC، at-least-once، و consumer idempotent با event_id.",
+    expectedPoints: ["outbox", "transaction", "idempotent", "at-least-once"],
+  },
+  {
+    id: "bh-01",
+    category: "behavioral",
+    difficulty: "medium",
+    promptFa: "سخت‌ترین incident که در آن نقش اصلی داشتید را با STAR توضیح دهید.",
+    rubricFa: "نقش شخصی روشن، مراحل تشخیص، ارتباط با ذی‌نفعان، نتیجهٔ عددی و اقدامات پیشگیرانه (postmortem، alert، runbook).",
+    expectedPoints: ["situation", "action", "result", "postmortem"],
+  },
+  {
+    id: "bh-02",
+    category: "behavioral",
+    difficulty: "medium",
+    promptFa: "زمانی که با تصمیم فنی تیم یا مدیرتان مخالف بودید چه کردید؟",
+    rubricFa: "استدلال با داده، شنیدن طرف مقابل، پیشنهاد آزمایش یا prototype، disagree and commit، و نتیجه.",
+    expectedPoints: ["data", "trade-off", "commit"],
+  },
+  {
+    id: "bh-03",
+    category: "behavioral",
+    difficulty: "hard",
+    promptFa: "یک تصمیم معماری مهم که گرفتید را توضیح دهید: چه گزینه‌هایی بود و چرا یکی را انتخاب کردید؟",
+    rubricFa: "حداقل دو گزینه با trade-off صریح، معیار تصمیم، ریسک و rollback، و بازنگری پس از اجرا.",
+    expectedPoints: ["options", "trade-off", "risk", "result"],
+  },
+  {
+    id: "bh-04",
+    category: "behavioral",
+    difficulty: "medium",
+    promptFa: "چطور کیفیت کد یا سرعت تحویل تیم را بهبود دادید؟",
+    rubricFa: "اقدام ابتکاری (CI، linter، template، code review، mentoring)، اندازه‌گیری قبل و بعد، و پذیرش تیم.",
+    expectedPoints: ["ownership", "mentoring", "metric"],
+  },
+  {
+    id: "bh-05",
+    category: "behavioral",
+    difficulty: "easy",
+    promptFa: "یک باگ production که خودتان ساختید و از آن چه یاد گرفتید؟",
+    rubricFa: "صداقت و پذیرش مسئولیت، اثر و رفع، و تغییر فرایند یا تست برای جلوگیری از تکرار؛ بدون مقصرتراشی.",
+    expectedPoints: ["ownership", "test", "lesson"],
   },
 ];
 
