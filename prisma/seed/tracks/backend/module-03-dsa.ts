@@ -1,8 +1,8 @@
-import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
+import { day, goLab, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } from "./helpers";
 
 export const dsaDays: DaySeed[] = [
   day({
-    dayNumber: 15,
+    dayNumber: 17,
     phaseSlug: "dsa",
     titleFa: "پیچیدگی و تحلیل الگوریتم",
     objectiveFa: "Big O، فضای کمکی و مقایسهٔ ساختارها را در پاسخ مصاحبه دقیق بیان کنید.",
@@ -59,7 +59,7 @@ for _, v := range s { if v == target { return true } }
       rootCause: "الگوریتم O(n²) بدون refactor با رشد داده",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۵ — پیچیدگی",
+      titleFa: "آزمون — پیچیدگی",
       questions: [
         mc(
           "جستجوی دودویی روی آرایه مرتب؟",
@@ -81,7 +81,7 @@ for _, v := range s { if v == target { return true } }
     },
   }),
   day({
-    dayNumber: 16,
+    dayNumber: 18,
     phaseSlug: "dsa",
     titleFa: "آرایه، رشته، hash و دو اشاره‌گر",
     objectiveFa: "two pointers، sliding window و map در مسائل مصاحبه Go را حل کنید.",
@@ -165,7 +165,7 @@ rate window، log parsing، stream metrics
       rootCause: "string concatenation در حلقه به‌جای strings.Builder",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۶ — آرایه و رشته",
+      titleFa: "آزمون — آرایه و رشته",
       questions: [
         mc(
           "two sum بهینه با؟",
@@ -180,9 +180,9 @@ rate window، log parsing، stream metrics
     },
   }),
   day({
-    dayNumber: 17,
+    dayNumber: 19,
     phaseSlug: "dsa",
-    titleFa: "لیست، stack، queue و مرتب‌سازی",
+    titleFa: "لیست، stack، queue، مرتب‌سازی و LRU cache",
     objectiveFa: "ساختارهای خطی و sort/search کلاسیک را با Go پیاده و تحلیل کنید.",
     topicSlugs: ["algo-arrays", "algo-complexity"],
     lessons: [
@@ -200,7 +200,8 @@ rate window، log parsing، stream metrics
 undo stack، BFS queue، parser bracket matching
 
 ## اشتباهات رایج
-- queue با slice و pop از front O(n)
+- dequeue با \`q = q[1:]\` خودش O(1) است، ولی خانه‌های ابتدای آرایه هرگز آزاد نمی‌شوند و آرایه مدام realloc می‌شود؛ اگر عنصرها pointer باشند، قبل از جلو بردن \`q[0] = zero\` کنید. برای صف طولانی‌مدت ring buffer بهتر است.
+- dequeue با \`copy(q, q[1:])\` هر بار O(n) است.
 - leak pointer در list اگر cycle بسازید
 
 ## سؤالات مصاحبه
@@ -232,8 +233,49 @@ ranking، pagination cursor، time-series query
 sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
 \`\`\``,
       }),
+      goLesson({
+        slug: "lru-cache",
+        topicSlug: "algo-arrays",
+        titleFa: "LRU cache: پرتکرارترین سؤال live coding",
+        objectiveFa: "LRU را با map و doubly linked list در O(1) پیاده و trade-offهایش را توضیح دهید.",
+        theoryMd: `## چرا این سؤال؟
+LRU در یک سؤال چند چیز را می‌سنجد: انتخاب ساختار داده، پیچیدگی، کد تمیز و بحث production (هم‌زمانی، TTL، حافظه). در مصاحبه‌های Go تیم‌های بزرگ ایرانی بسیار تکرار می‌شود.
+
+## ایده
+- **map** از کلید به گره: پیدا کردن در O(1)
+- **doubly linked list**: ابتدای لیست جدیدترین و انتهای آن قدیمی‌ترین است؛ جابه‌جایی و حذف گره در O(1)
+- Get: گره را به ابتدا ببر. Put: اگر هست مقدار را عوض کن و به ابتدا ببر؛ اگر پر است از انتها حذف کن (و از map هم!).
+
+در Go \`container/list\` همین لیست را دارد. بعضی مصاحبه‌گرها می‌خواهند لیست را خودتان بنویسید (با sentinel head و tail تا حالت‌های مرزی حذف شوند).
+
+## بحث production (امتیاز Senior)
+- **هم‌زمانی:** Get هم ترتیب را تغییر می‌دهد، پس حتی خواندن نوشتن است و RWMutex کمکی نمی‌کند. Mutex کامل یا shard کردن cache به N بخش.
+- **TTL** و انقضای تنبل هنگام Get.
+- **حافظه:** محدودیت بر اساس تعداد یا بر اساس بایت.
+- جایگزین‌های واقعی: \`hashicorp/golang-lru\`، \`ristretto\` (با TinyLFU و hit rate بهتر از LRU خالص).`,
+        practicalMd: `قبل از کد، روی کاغذ با capacity=2 دنبالهٔ Put(a) Put(b) Get(a) Put(c) را دنبال کنید و وضعیت map و لیست را بکشید.`,
+        exampleMd: `~~~go
+type entry[K comparable, V any] struct {
+	key K // برای حذف از map هنگام eviction لازم است
+	val V
+}
+~~~`,
+      }),
     ],
     exercises: [
+      goLab({
+        lab: "lru-cache",
+        titleFa: "لب: LRU cache جنریک در O(1)",
+        topicSlug: "algo-arrays",
+        lessonSlug: "lru-cache",
+        instructionsMd: `یک LRU cache جنریک بنویسید. یکی از تست‌ها ۶۰ هزار عملیات را زمان‌سنجی می‌کند، پس پیاده‌سازی خطی (جست‌وجو در slice) رد می‌شود. برای تمرین مصاحبه، زمان بگیرید: هدف ۲۵ دقیقه.`,
+        hints: [
+          "دو ساختار: map[K]*list.Element برای پیدا کردن، و container/list برای ترتیب استفاده.",
+          "در entry کلید را هم نگه دارید؛ هنگام evict از انتهای لیست باید بدانید کدام کلید را از map حذف کنید.",
+          "Get: MoveToFront. Put: اگر موجود است مقدار را عوض و MoveToFront؛ اگر Len() >= cap، Back() را Remove و از map delete کنید؛ سپس PushFront و ذخیره در map.",
+        ],
+        difficulty: "medium",
+      }),
       noteExercise({
         titleFa: "valid parentheses",
         topicSlug: "algo-arrays",
@@ -248,13 +290,13 @@ sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
       path: "/tmp/dsa-day17-scenario.txt",
       mustContain: "slice",
       incidentMd: "event processor CPU بالا؛ dequeue کند.",
-      symptomsMd: "pop از index 0 روی slice بزرگ.",
-      rootCause: "queue با slice و shift O(n) به‌جای ring buffer یا linked list",
+      symptomsMd: "profile: runtime.memmove در تابع Dequeue که copy(q, q[1:]) انجام می‌دهد.",
+      rootCause: "dequeue با copy(q, q[1:]) که هر بار O(n) است؛ ring buffer یا re-slice با zero کردن خانهٔ قبلی لازم بود",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۷ — ساختار خطی",
+      titleFa: "آزمون — ساختار خطی",
       questions: [
-        mc("پیچیدگی pop از ابتدای slice؟", ["O(1)", "O(log n)", "O(n)", "O(n²)"], "O(n)", "copy elements.", "algo-arrays"),
+        mc("پیچیدگی dequeue با copy(q, q[1:]) روی slice؟", ["O(1)", "O(log n)", "O(n)", "O(n²)"], "O(n)", "همهٔ عناصر یک خانه جابه‌جا می‌شوند؛ q = q[1:] برعکس O(1) است.", "algo-arrays"),
         tf("sort.Slice در Go stable است.", false, "ترتیب equal ثابت تضمین نمی‌شود.", "algo-complexity"),
         mc("LIFO با؟", ["queue", "stack", "map", "heap min"], "stack", "آخرین وارد اول خارج.", "algo-arrays"),
         sa("تابع stdlib برای binary search روی sorted slice؟", "sort.Search", "یا slices.BinarySearch در newer Go.", "algo-complexity"),
@@ -262,7 +304,7 @@ sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
     },
   }),
   day({
-    dayNumber: 18,
+    dayNumber: 20,
     phaseSlug: "dsa",
     titleFa: "درخت، BST و heap",
     objectiveFa: "traverse درخت، BST invariant و heap برای top-K را توضیح دهید.",
@@ -337,7 +379,7 @@ import "container/heap"
       rootCause: "BST بدون balance روی ورودی sorted",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۸ — درخت",
+      titleFa: "آزمون — درخت",
       questions: [
         mc("inorder BST چه خروجی می‌دهد؟", ["random", "sorted values", "reverse only", "BFS order"], "sorted values", "نمایش مرتب.", "algo-trees"),
         tf("heap push/pop هر دو O(log n).", true, "sift up/down.", "algo-trees"),
@@ -346,7 +388,7 @@ import "container/heap"
     },
   }),
   day({
-    dayNumber: 19,
+    dayNumber: 21,
     phaseSlug: "dsa",
     titleFa: "گراف — BFS و DFS",
     objectiveFa: "نمایش گراف، shortest path unweighted و cycle detection را حل کنید.",
@@ -397,7 +439,7 @@ graph := map[int][]int{1: {2, 3}, 2: {4}}
       rootCause: "cycle در dependency graph شناسایی نشده",
     }),
     exam: {
-      titleFa: "آزمون روز ۱۹ — گراف",
+      titleFa: "آزمون — گراف",
       questions: [
         mc("کوتاه‌ترین مسیر unweighted؟", ["DFS", "BFS", "sort", "heap only"], "BFS", "اولین بار رسیدن کوتاه‌ترین است.", "algo-trees"),
         tf("DFS همیشه shortest path می‌دهد.", false, "فقط BFS در unweighted.", "algo-trees"),
@@ -407,7 +449,7 @@ graph := map[int][]int{1: {2, 3}, 2: {4}}
     },
   }),
   day({
-    dayNumber: 20,
+    dayNumber: 22,
     phaseSlug: "dsa",
     titleFa: "Recursion، DP و Greedy",
     objectiveFa: "درخت بازگشت، memoization و انتخاب greedy درست را در مصاحبه نشان دهید.",
@@ -484,7 +526,7 @@ sort.Slice(intervals, func(i,j int) bool { return intervals[i][0] < intervals[j]
       rootCause: "recursion بی‌حد بدون تبدیل به iterative یا limit depth",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۰ — DP",
+      titleFa: "آزمون — DP",
       questions: [
         mc("DP مناسب وقتی؟", ["no overlapping subproblems", "optimal substructure + overlap", "only greedy", "graph without edges"], "optimal substructure + overlap", "تعریف کلاسیک DP.", "algo-dp"),
         tf("greedy همیشه برای minimum coins optimal است.", false, "بستگی به denominators.", "algo-dp"),

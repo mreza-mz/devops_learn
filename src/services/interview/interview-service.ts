@@ -26,6 +26,7 @@ const CATEGORY_ORDER: InterviewCategory[] = [
   "system-design",
   "backend",
   "problem-solving",
+  "behavioral",
 ];
 
 function shuffle<T>(items: T[]): T[] {

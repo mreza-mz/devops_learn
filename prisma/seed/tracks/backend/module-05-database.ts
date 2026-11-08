@@ -2,7 +2,7 @@ import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } f
 
 export const databaseDays: DaySeed[] = [
   day({
-    dayNumber: 25,
+    dayNumber: 27,
     phaseSlug: "database-engineering",
     titleFa: "مدل رابطه‌ای، SQL و JOIN",
     objectiveFa: "نرمال‌سازی، انواع JOIN، aggregate و تفاوت‌های عملی PostgreSQL/MySQL را در مصاحبه توضیح دهید.",
@@ -86,7 +86,7 @@ CREATE TABLE ledger_entries (
       rootCause: "استفاده از FLOAT برای amount به‌جای NUMERIC",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۵ — SQL",
+      titleFa: "آزمون — SQL",
       questions: [
         mc(
           "کدام JOIN کاربران بدون سفارش را هم برمی‌گرداند؟",
@@ -109,7 +109,7 @@ CREATE TABLE ledger_entries (
   }),
 
   day({
-    dayNumber: 26,
+    dayNumber: 28,
     phaseSlug: "database-engineering",
     titleFa: "ایندکس، B-Tree و بهینه‌سازی کوئری",
     objectiveFa: "EXPLAIN، selective index، covering index و anti-patternهای N+1 را تحلیل کنید.",
@@ -158,7 +158,7 @@ EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 42 ORDER BY created_at DESC
       rootCause: "حذف تصادفی composite index و fallback به seq scan",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۶ — Indexes",
+      titleFa: "آزمون — Indexes",
       questions: [
         mc(
           "ترتیب ستون در composite index (a,b) برای WHERE a=? AND b>? چه اهمیتی دارد؟",
@@ -181,7 +181,7 @@ EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 42 ORDER BY created_at DESC
   }),
 
   day({
-    dayNumber: 27,
+    dayNumber: 29,
     phaseSlug: "database-engineering",
     titleFa: "تراکنش، ACID و ایزولاسیون",
     objectiveFa: "سطوح isolation، deadlock، MVCC و locking را برای سناریوهای پرداخت توضیح دهید.",
@@ -199,9 +199,9 @@ EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 42 ORDER BY created_at DESC
 - **Durability**: WAL/commit
 
 ## سطوح (ANSI)
-- **RU**: dirty read (نادر در PG)
+- **RU**: اجازهٔ dirty read؛ در PostgreSQL هرگز رخ نمی‌دهد چون RU همان RC رفتار می‌کند
 - **RC**: default PG/Oracle
-- **RR**: default InnoDB — snapshot
+- **RR**: پیش‌فرض InnoDB؛ در PG پیاده‌سازی snapshot isolation است و phantom هم رخ نمی‌دهد، ولی write skew ممکن است
 - **Serializable**: highest — ممکن است serialization failure
 
 ## MVCC (PostgreSQL)
@@ -262,7 +262,7 @@ COMMIT;
       rootCause: "Read Committed بدون lock/version روی decrement موجودی",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۷ — Transactions",
+      titleFa: "آزمون — Transactions",
       questions: [
         mc(
           "PostgreSQL isolation پیش‌فرض؟",
@@ -285,7 +285,7 @@ COMMIT;
   }),
 
   day({
-    dayNumber: 28,
+    dayNumber: 30,
     phaseSlug: "database-engineering",
     titleFa: "Connection pool، replication و sharding",
     objectiveFa: "PgBouncer، read replica lag، partitioning و sharding trade-off را بیان کنید.",
@@ -332,7 +332,7 @@ COMMIT;
       rootCause: "read-after-write بدون routing به primary یا session stickiness",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۸ — Scale DB",
+      titleFa: "آزمون — Scale DB",
       questions: [
         mc(
           "Sharding بیشترین هزینه را در کجا ایجاد می‌کند؟",
@@ -355,7 +355,7 @@ COMMIT;
   }),
 
   day({
-    dayNumber: 29,
+    dayNumber: 31,
     phaseSlug: "database-engineering",
     titleFa: "Redis و استراتژی کش",
     objectiveFa: "cache-aside، TTL، invalidation و thundering herd را طراحی کنید.",
@@ -413,7 +413,7 @@ On UPDATE users SET ... → DEL user:42
       rootCause: "بدون singleflight/TTL jitter؛ thundering herd",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۹ — Cache",
+      titleFa: "آزمون — Cache",
       questions: [
         mc(
           "cache-aside: چه کسی cache را on miss پر می‌کند؟",

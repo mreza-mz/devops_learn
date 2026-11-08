@@ -20,7 +20,8 @@
     "db:seed": "tsx prisma/seed/index.ts",
     "db:export": "tsx --env-file=.env scripts/db-backup.ts export",
     "db:import": "tsx --env-file=.env scripts/db-backup.ts import",
-    "lab:build": "docker build -t devops-learn-lab:latest ./lab-image"
+    "lab:build": "docker build -t devops-learn-lab:latest ./lab-image",
+    "labs:verify": "bash scripts/verify-go-labs.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed/index.ts"

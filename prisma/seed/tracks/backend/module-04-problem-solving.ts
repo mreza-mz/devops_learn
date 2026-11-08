@@ -2,7 +2,7 @@ import { day, goLesson, mc, noteExercise, noteScenario, sa, tf, type DaySeed } f
 
 export const problemSolvingDays: DaySeed[] = [
   day({
-    dayNumber: 21,
+    dayNumber: 23,
     phaseSlug: "problem-solving",
     titleFa: "دیباگ سیستماتیک و memory leak",
     objectiveFa: "فرایند triage، pprof و تمایز leak حافظه از goroutine را در incident حل کنید.",
@@ -89,7 +89,7 @@ import _ "net/http/pprof"
       rootCause: "map[string][]byte global برای dedupe بدون TTL؛ کلیدها هر request جدید می‌مانند",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۱ — دیباگ",
+      titleFa: "آزمون — دیباگ",
       questions: [
         mc(
           "اولین profile برای RSS رو به بالا؟",
@@ -111,7 +111,7 @@ import _ "net/http/pprof"
     },
   }),
   day({
-    dayNumber: 22,
+    dayNumber: 24,
     phaseSlug: "problem-solving",
     titleFa: "عملکرد — latency و بهینه‌سازی",
     objectiveFa: "تجزیه latency، trace و CPU/alloc profile را برای API کند تحلیل کنید.",
@@ -184,7 +184,7 @@ func BenchmarkX(b *testing.B) {
       rootCause: "N+1 query بعد از حذف eager load",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۲ — عملکرد",
+      titleFa: "آزمون — عملکرد",
       questions: [
         mc("tail latency اغلب از؟", ["p50 بهتر", "outlier و contention", "فقط DNS", "compile"], "outlier و contention", "tail events.", "ps-perf"),
         tf("کاهش allocation می‌تواند tail را بهبود دهد.", true, "کمتر GC pause.", "ps-perf"),
@@ -194,7 +194,7 @@ func BenchmarkX(b *testing.B) {
     },
   }),
   day({
-    dayNumber: 23,
+    dayNumber: 25,
     phaseSlug: "problem-solving",
     titleFa: "RCA — تراکنش، race و صف",
     objectiveFa: "duplicate payment، race condition و queue backlog را با شواهد ریشه‌یابی کنید.",
@@ -269,7 +269,7 @@ webhook retry، double click، out-of-order events
       rootCause: "retry بدون idempotency key؛ processor هر بار charge جدید ساخت",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۳ — RCA",
+      titleFa: "آزمون — RCA",
       questions: [
         mc("جلوگیری duplicate از retry؟", ["random sleep", "idempotency key", "bigger timeout only", "remove logs"], "idempotency key", "همان عملیات یک بار اثر کند.", "ps-rca"),
         tf("queue backlog همیشه یعنی consumer crash.", false, "می‌تواند slow processing یا producer spike باشد.", "ps-rca"),
@@ -279,7 +279,7 @@ webhook retry، double click، out-of-order events
     },
   }),
   day({
-    dayNumber: 24,
+    dayNumber: 26,
     phaseSlug: "problem-solving",
     titleFa: "شکست dependency و resilience",
     objectiveFa: "DB pool exhaustion، outage خارجی و طراحی degradation را ارزیابی کنید.",
@@ -362,7 +362,7 @@ db.SetConnMaxLifetime(5 * time.Minute)
       rootCause: "slow report query بدون index + conn leak از goroutine بدون Close",
     }),
     exam: {
-      titleFa: "آزمون روز ۲۴ — Resilience",
+      titleFa: "آزمون — Resilience",
       questions: [
         mc("retry POST پرداخت بدون چه چیزی خطرناک است؟", ["logging", "idempotency key", "context", "mutex"], "idempotency key", "جلوگیری duplicate.", "ps-rca"),
         tf("circuit breaker در حالت open درخواست‌ها را سریع fail می‌کند.", true, "تا recovery timeout.", "ps-rca"),

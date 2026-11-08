@@ -19,11 +19,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     util-linux \
     vim-tiny \
+    golang-go \
+    gcc \
+    libc6-dev \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -s /bin/bash student \
     && echo "student ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/student \
     && mkdir -p /home/student/workspace \
     && chown -R student:student /home/student
+
+# Go labs (Backend track). Labs run with --network none, so everything must
+# work offline: stdlib only, no module proxy, no toolchain downloads.
+# GOMAXPROCS/-p keep the build under the container's PID limit (LAB_MAX_PROCESSES).
+ENV GOTOOLCHAIN=local \
+    GOPROXY=off \
+    GOFLAGS=-p=2 \
+    GOMAXPROCS=2 \
+    GOPATH=/root/go \
+    GOCACHE=/root/.cache/go-build \
+    CGO_ENABLED=1
+
+# Pre-build the standard library (normal and -race) so the first `go test`
+# in a lab takes seconds instead of minutes on a 0.5 CPU sandbox.
+RUN mkdir -p /tmp/warm && cd /tmp/warm \
+    && printf 'module warm\n\ngo 1.22\n' > go.mod \
+    && printf 'package warm\n\nimport (\n\t"context"\n\t"net/http/httptest"\n\t"sync"\n)\n\nvar _ = httptest.NewRecorder\nvar _ sync.Mutex\nvar _ = context.Background\n' > warm.go \
+    && printf 'package warm\n\nimport "testing"\n\nfunc TestWarm(t *testing.T) {}\n' > warm_test.go \
+    && go test ./... && go test -race ./... && go vet ./... \
+    && cd / && rm -rf /tmp/warm
 
 WORKDIR /root
 CMD ["sleep", "infinity"]

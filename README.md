@@ -47,9 +47,20 @@ Next.js · Prisma/SQLite · Docker sandbox · xterm.js · optional [AvalAI](http
 | `npm run db:seed` | Seed 47-day curriculum (Linux → SRE → platform tools from web sources) |
 | `npm run db:export -- [out.db]` | Export SQLite backup (progress + lessons) |
 | `npm run db:import -- <backup.db>` | Restore a previous backup |
-| `npm run lab:build` | Build `devops-learn-lab:latest` |
+| `npm run lab:build` | Build `devops-learn-lab:latest` (includes Go for the Backend track) |
+| `npm run labs:verify` | Check every Go lab: starter compiles and fails, reference solution passes `go vet` + `go test -race` (needs local Go ≥ 1.22 and gcc) |
 
 Optional: `docker compose up --build`
+
+## Backend → Go track
+
+50 days in 8 modules (Go fundamentals → concurrency → DSA → problem solving → databases → system design → backend with Go → interviews).
+Core Go days end in a **real coding lab**: starter code and tests are written to `~/labs/<name>` in the sandbox, and the exercise passes only when the tests are untouched, `go vet` is clean and `go test` (with `-race` for concurrency labs) passes.
+
+- Lab sources: `prisma/seed/tracks/backend/labs/<name>/` (`*.go` starter, `*_test.go` spec, `solution/` reference — never copied into the sandbox)
+- Add a lab: create the folder, wire it with `goLab()` in the module file, then run `npm run labs:verify` and `npm test`
+- Labs run offline (`--network none`): standard library only
+- After pulling these changes run `npm run lab:build` once, then `npm run db:seed`. Backend day numbers changed (45 → 50 days), so progress recorded on the old Backend days will point at different lessons; reseed on a fresh database if that matters.
 
 Student containers never see the Docker socket. The API key never goes to the browser.
 
