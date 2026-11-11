@@ -48,7 +48,8 @@ export const learningService = {
 
     const mapped = days.map((day) => {
       const progress = byLessonId.get(day.id) ?? null;
-      const unlocked = day.dayNumber <= trackProgress.currentDayNumber;
+      //const unlocked = day.dayNumber <= trackProgress.currentDayNumber;
+      const unlocked = true;
       return {
         id: day.id,
         dayNumber: day.dayNumber,
